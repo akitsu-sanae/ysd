@@ -10,18 +10,14 @@ use buffer::Buffer;
 use cursor::Cursor;
 use cursor::Direction;
 use status::Status;
+use status::Mode;
+use colors;
 
 pub struct Editor {
     cursor: Cursor,
     buffers: Vec<Buffer>,
     status: Status,
     is_quit: bool,
-    mode: Mode,
-}
-
-enum Mode {
-    Move,
-    Edit,
 }
 
 impl Editor {
@@ -32,6 +28,7 @@ impl Editor {
             keypad(stdscr, true);
             scrollok(stdscr, true);
             noecho();
+            colors::init();
         }
 
         Editor {
@@ -39,7 +36,6 @@ impl Editor {
             buffers: vec![],
             status: Status::new(),
             is_quit: false,
-            mode: Mode::Move,
         }
     }
 
@@ -52,7 +48,7 @@ impl Editor {
     }
 
     pub fn update(&mut self) {
-        match self.mode {
+        match self.status.mode {
             Mode::Move => self.update_move(),
             Mode::Edit => self.update_edit(),
         }
@@ -62,6 +58,7 @@ impl Editor {
         for ref buf in &self.buffers {
             buf.draw();
         }
+
         self.cursor.draw(&self.buffers[0]);
         self.status.draw();
         self.cursor.draw(&self.buffers[0]);
@@ -73,7 +70,7 @@ impl Editor {
             self.is_quit = true;
         } else {
             match ch as u8 as char {
-                'a' => self.mode = Mode::Edit,
+                'a' => self.status.mode = Mode::Edit,
                 'j' => self.cursor.go(Direction::Left),
                 'l' => self.cursor.go(Direction::Right),
                 'i' => self.cursor.go(Direction::Up),
@@ -86,7 +83,7 @@ impl Editor {
     fn update_edit(&mut self) {
         let ch = getch();
         match ch {
-            27 => self.mode = Mode::Move,
+            27 => self.status.mode = Mode::Move,
             127 | KEY_BACKSPACE => {
                 self.buffers[0].erase(self.cursor.get());
                 self.cursor.go(Direction::Left);

@@ -13,6 +13,7 @@ mod buffer;
 mod cursor;
 mod editor;
 mod status;
+mod colors;
 use editor::Editor;
 use buffer::Buffer;
 

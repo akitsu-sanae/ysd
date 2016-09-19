@@ -6,6 +6,7 @@
 ============================================================================*/
 
 use ncurses::*;
+use colors;
 
 pub enum Mode {
     Move,
@@ -13,7 +14,7 @@ pub enum Mode {
 }
 
 pub struct Status {
-    mode: Mode,
+    pub mode: Mode,
 }
 
 impl Status {
@@ -32,10 +33,11 @@ impl Status {
         }
 
         str += format!("({}, {})", getcurx(stdscr), getcury(stdscr)).as_str();
-
-        attron(A_BOLD());
+        let color = colors::mode(&self.mode);
+        attron(color | A_BOLD());
         mvprintw(getmaxy(stdscr)-1, 0, str.as_str());
-        attroff(A_BOLD());
+        clrtoeol();
+        attroff(color | A_BOLD());
     }
 }
 
