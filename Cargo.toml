@@ -1,0 +1,8 @@
+[package]
+name = "ysd"
+version = "0.1.0"
+authors = ["akitsu"]
+
+[dependencies.ncurses]
+features = ["menu"]
+

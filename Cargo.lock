@@ -1,0 +1,23 @@
+[root]
+name = "ysd"
+version = "0.1.0"
+dependencies = [
+ "ncurses 5.82.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "libc"
+version = "0.2.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "ncurses"
+version = "5.82.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[metadata]
+"checksum libc 0.2.16 (registry+https://github.com/rust-lang/crates.io-index)" = "408014cace30ee0f767b1c4517980646a573ec61a57957aeeabcac8ac0a02e8d"
+"checksum ncurses 5.82.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f260f0a421b984915be79b414ecfb1b33a6f966b1dcc180ea38c1c0e9dbed8eb"
