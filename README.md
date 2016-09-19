@@ -7,7 +7,7 @@ Ysd is a text editor made with Rust lang.
 2. run `git clone https://github.com/akitsu-sanae/ysd`
 3. run `cd ysd`
 4. run `cargo build --release`
-5. then, you can fild executable ysd in `./target/release/`
+5. then, you can find executable ysd in `./target/release/`
 
 # How to use
 
@@ -18,14 +18,20 @@ Ysd is a text editor made with Rust lang.
     - i ... move up
     - k ... move down
     - a ... chage mode to Edit
-    - F1 ... change mode to Edit
+    - F1 ... exit
 * in Edit Mode
     - Esc ... change mode to Move
-    - otherwise ... insert charactor at current cursor.
+    - otherwise ... insert charactor at current cursor position.
 
 # Copyright
 Copyright (C) 2016 akitsu sanae.  
 Distributed under the Boost Software License, Version 1.0. 
 (See accompanying file LICENSE_1_0 or copy at http://www.boost/org/LICENSE_1_0.txt)  
+
+
+ysd uses [ncurses-rs](https://github.com/jeaye/ncurses-rs), which is licensed by the MIT license.  
+
+> Copyright (c) 2016 Jesse 'Jeaye' Wilkerson
+
 
 
