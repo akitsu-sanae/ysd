@@ -5,4 +5,5 @@ authors = ["akitsu"]
 
 [dependencies.ncurses]
 features = ["menu"]
+version = "5.82.0"
 

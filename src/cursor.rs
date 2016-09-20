@@ -36,8 +36,10 @@ impl Cursor {
                 }
             },
             Direction::Right => {
-                if self.x+1 < getmaxx(stdscr) as u32 {
-                    self.x += 1;
+                unsafe {
+                    if self.x+1 < getmaxx(stdscr) as u32 {
+                        self.x += 1;
+                    }
                 }
             },
             Direction::Up => {

@@ -31,13 +31,14 @@ impl Status {
             Mode::Move => str += "Move",
             Mode::Edit => str += "Edit",
         }
-
-        str += format!("({}, {})", getcurx(stdscr), getcury(stdscr)).as_str();
-        let color = colors::mode(&self.mode);
-        attron(color | A_BOLD());
-        mvprintw(getmaxy(stdscr)-1, 0, str.as_str());
-        clrtoeol();
-        attroff(color | A_BOLD());
+        unsafe {
+            str += format!("({}, {})", getcurx(stdscr), getcury(stdscr)).as_str();
+            let color = colors::mode(&self.mode);
+            attron(color | A_BOLD());
+            mvprintw(getmaxy(stdscr)-1, 0, str.as_str());
+            clrtoeol();
+            attroff(color | A_BOLD());
+        }
     }
 }
 

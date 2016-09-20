@@ -27,18 +27,6 @@ impl Buffer {
         }
     }
 
-    pub fn insert_line(&mut self, n: usize, str: String) {
-        self.lines.insert(n, str);
-    }
-
-    pub fn append_line(&mut self, str: String) {
-        self.lines.push(str);
-    }
-
-    pub fn remove_line(&mut self, n: usize) {
-        self.lines.remove(n);
-    }
-
     pub fn erase(&mut self, (x, y): (u32, u32)) {
         if y >= self.lines.len() as u32 {
             return;
@@ -64,38 +52,39 @@ impl Buffer {
     }
 
     pub fn draw(&self, current_line: usize) {
-        let top_line = if current_line < getmaxy(stdscr) as usize / 2usize {
-            0
-        } else if current_line + getmaxy(stdscr) as usize / 2usize > self.lines.len() {
-            self.lines.len() - getmaxy(stdscr) as usize
-        } else {
-            current_line - getmaxy(stdscr) as usize / 2usize
-        };
-        for i in {0 .. getmaxy(stdscr) as usize} {
-            if i + top_line >= self.lines.len() {
-                mv(i as i32, 0);
+        unsafe {
+            let top_line = if current_line < getmaxy(stdscr) as usize / 2usize {
+                0
+            } else if current_line + getmaxy(stdscr) as usize / 2usize > self.lines.len() {
+                self.lines.len() - getmaxy(stdscr) as usize
             } else {
-                mvprintw(i as i32, 0, self.lines[i + top_line].as_str());
+                current_line - getmaxy(stdscr) as usize / 2usize
+            };
+            for i in {0 .. getmaxy(stdscr) as usize} {
+                if i + top_line >= self.lines.len() {
+                    mv(i as i32, 0);
+                } else {
+                    mvprintw(i as i32, 0, self.lines[i + top_line].as_str());
+                }
+                clrtoeol();
             }
-            clrtoeol();
         }
     }
 
     pub fn is_valid_pos(&self, (x, y): (u32, u32)) -> bool {
-        if x >= getmaxx(stdscr) as u32 {
-            return false;
+        unsafe {
+            if x >= getmaxx(stdscr) as u32 {
+                return false;
+            }
+            if y >= getmaxy(stdscr) as u32 {
+                return false;
+            }
         }
-        if y >= getmaxy(stdscr) as u32 {
-            return false;
-        }
+
         if x >= self.lines[y as usize].len() as u32 {
             return false;
         }
         return true;
-    }
-
-    pub fn lines(&self) -> &Vec<String> {
-        &self.lines
     }
 
     pub fn line(&self, i: u32) -> &String {
