@@ -63,12 +63,19 @@ impl Buffer {
         }
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&self, current_line: usize) {
+        let top_line = if current_line < getmaxy(stdscr) as usize / 2usize {
+            0
+        } else if current_line + getmaxy(stdscr) as usize / 2usize > self.lines.len() {
+            self.lines.len() - getmaxy(stdscr) as usize
+        } else {
+            current_line - getmaxy(stdscr) as usize / 2usize
+        };
         for i in {0 .. getmaxy(stdscr) as usize} {
-            if i >= self.lines.len() {
+            if i + top_line >= self.lines.len() {
                 mv(i as i32, 0);
             } else {
-                mvprintw(i as i32, 0, self.lines[i].as_str());
+                mvprintw(i as i32, 0, self.lines[i + top_line].as_str());
             }
             clrtoeol();
         }
@@ -85,6 +92,10 @@ impl Buffer {
             return false;
         }
         return true;
+    }
+
+    pub fn lines(&self) -> &Vec<String> {
+        &self.lines
     }
 
     pub fn line(&self, i: u32) -> &String {

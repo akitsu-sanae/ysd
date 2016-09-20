@@ -23,12 +23,12 @@ pub enum Direction {
 impl Cursor {
     pub fn new() -> Self {
         Cursor {
-            x: 0,
-            y: 0,
+            x: 0, // from 0 to getmaxx(stdscr) - 1
+            y: 0, // from 0 to buffer.lines.len() - 1
         }
     }
 
-    pub fn go(&mut self, dir: Direction) {
+    pub fn go(&mut self, dir: Direction, buf: &Buffer) {
         match dir {
             Direction::Left => {
                 if self.x >= 1 {
@@ -46,7 +46,7 @@ impl Cursor {
                 }
             },
             Direction::Down => {
-                if self.y+1 < getmaxy(stdscr) as u32 {
+                if self.y+1 <= buf.lines.len() as u32 - 1 {
                     self.y += 1;
                 }
             },

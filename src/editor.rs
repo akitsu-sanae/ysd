@@ -56,7 +56,7 @@ impl Editor {
 
     pub fn draw(&self) {
         for ref buf in &self.buffers {
-            buf.draw();
+            buf.draw(self.cursor.get().1 as usize);
         }
 
         self.cursor.draw(&self.buffers[0]);
@@ -71,10 +71,10 @@ impl Editor {
         } else {
             match ch as u8 as char {
                 'a' => self.status.mode = Mode::Edit,
-                'j' => self.cursor.go(Direction::Left),
-                'l' => self.cursor.go(Direction::Right),
-                'i' => self.cursor.go(Direction::Up),
-                'k' => self.cursor.go(Direction::Down),
+                'j' => self.cursor.go(Direction::Left, &self.buffers[0]),
+                'l' => self.cursor.go(Direction::Right, &self.buffers[0]),
+                'i' => self.cursor.go(Direction::Up, &self.buffers[0]),
+                'k' => self.cursor.go(Direction::Down, &self.buffers[0]),
                 _ => (),
             }
         }
@@ -86,11 +86,11 @@ impl Editor {
             27 => self.status.mode = Mode::Move,
             127 | KEY_BACKSPACE => {
                 self.buffers[0].erase(self.cursor.get());
-                self.cursor.go(Direction::Left);
+                self.cursor.go(Direction::Left, &self.buffers[0]);
             },
             _ => {
                 self.buffers[0].insert(self.cursor.get(), ch as u8 as char);
-                self.cursor.go(Direction::Right);
+                self.cursor.go(Direction::Right, &self.buffers[0]);
             }
         }
     }
