@@ -9,8 +9,8 @@ use ncurses::*;
 use buffer::Buffer;
 
 pub struct Cursor {
-    x: u32,
-    y: u32,
+    x: usize,
+    y: usize,
 }
 
 pub enum Direction {
@@ -37,7 +37,7 @@ impl Cursor {
             },
             Direction::Right => {
                 unsafe {
-                    if self.x+1 < getmaxx(stdscr) as u32 {
+                    if self.x+1 < getmaxx(stdscr) as usize {
                         self.x += 1;
                     }
                 }
@@ -48,7 +48,7 @@ impl Cursor {
                 }
             },
             Direction::Down => {
-                if self.y+1 <= buf.lines.len() as u32 - 1 {
+                if self.y+1 <= buf.lines.len() - 1 {
                     self.y += 1;
                 }
             },
@@ -63,7 +63,7 @@ impl Cursor {
         }
     }
 
-    pub fn get(&self) -> (u32, u32) {
+    pub fn get(&self) -> (usize, usize) {
         (self.x, self.y)
     }
 }

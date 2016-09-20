@@ -27,27 +27,27 @@ impl Buffer {
         }
     }
 
-    pub fn erase(&mut self, (x, y): (u32, u32)) {
-        if y >= self.lines.len() as u32 {
+    pub fn erase(&mut self, (x, y): (usize, usize)) {
+        if y >= self.lines.len() {
             return;
         }
-        if self.lines[y as usize].len() == 0 {
+        if self.lines[y].len() == 0 {
             return;
         }
-        if x < self.lines[y as usize].len() as u32 {
-            self.lines[y as usize].remove(x as usize);
+        if x < self.lines[y].len() {
+            self.lines[y].remove(x);
         } else {
-            self.lines[y as usize].pop().unwrap();
+            self.lines[y].pop().unwrap();
         }
     }
-    pub fn insert(&mut self, (x, y): (u32, u32), ch: char) {
-        if y >= self.lines.len() as u32 {
+    pub fn insert(&mut self, (x, y): (usize, usize), ch: char) {
+        if y >= self.lines.len() {
             return;
         }
-        if x > self.lines[y as usize].len() as u32 {
-            self.lines[y as usize].push(ch);
+        if x > self.lines[y].len() {
+            self.lines[y].push(ch);
         } else {
-            self.lines[y as usize].insert(x as usize, ch);
+            self.lines[y].insert(x, ch);
         }
     }
 
@@ -71,23 +71,23 @@ impl Buffer {
         }
     }
 
-    pub fn is_valid_pos(&self, (x, y): (u32, u32)) -> bool {
+    pub fn is_valid_pos(&self, (x, y): (usize, usize)) -> bool {
         unsafe {
-            if x >= getmaxx(stdscr) as u32 {
+            if x >= getmaxx(stdscr) as usize {
                 return false;
             }
-            if y >= getmaxy(stdscr) as u32 {
+            if y >= getmaxy(stdscr) as usize {
                 return false;
             }
         }
 
-        if x >= self.lines[y as usize].len() as u32 {
+        if x >= self.lines[y as usize].len() {
             return false;
         }
         return true;
     }
 
-    pub fn line(&self, i: u32) -> &String {
+    pub fn line(&self, i: usize) -> &String {
         &self.lines[i as usize]
     }
 }
