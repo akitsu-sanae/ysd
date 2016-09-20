@@ -72,23 +72,16 @@ impl Buffer {
     }
 
     pub fn is_valid_pos(&self, (x, y): (usize, usize)) -> bool {
-        unsafe {
-            if x >= getmaxx(stdscr) as usize {
-                return false;
-            }
-            if y >= getmaxy(stdscr) as usize {
-                return false;
-            }
+        if y >= self.lines.len() {
+            return false;
         }
-
-        if x >= self.lines[y as usize].len() {
+        if x >= self.lines[y].len() {
             return false;
         }
         return true;
     }
-
     pub fn line(&self, i: usize) -> &String {
-        &self.lines[i as usize]
+        &self.lines[i]
     }
 }
 

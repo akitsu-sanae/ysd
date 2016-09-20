@@ -56,10 +56,20 @@ impl Cursor {
     }
 
     pub fn draw(&self, buf: &Buffer) {
-        if buf.is_valid_pos((self.x, self.y)) {
-            mv(self.y as i32, self.x as i32);
-        } else {
-            mv(self.y as i32, buf.line(self.y).len() as i32);
+        unsafe {
+            let top_line = if self.y < getmaxy(stdscr) as usize / 2usize {
+                0
+            } else if self.y + getmaxy(stdscr) as usize / 2usize > buf.lines.len() {
+                buf.lines.len() - getmaxy(stdscr) as usize
+            } else {
+                self.y - getmaxy(stdscr) as usize / 2usize
+            } as i32;
+
+            if buf.is_valid_pos((self.x, self.y)) {
+                mv(self.y as i32 - top_line, self.x as i32);
+            } else {
+                mv(self.y as i32 - top_line, buf.line(self.y).len() as i32);
+            }
         }
     }
 
