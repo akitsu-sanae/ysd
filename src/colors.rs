@@ -9,18 +9,18 @@ use ncurses::*;
 use status::Mode;
 
 // red, green, blue, yellow, magenta, cyan, black, white were pre defined
-const COLOR_GRAY: i16 = 16;
-const COLOR_DARK_RED: i16 = 17;
-const COLOR_DARK_GREEN: i16 = 18;
-const COLOR_DARK_BLUE: i16 = 19;
-const COLOR_DARK_YELLOW: i16 = 20;
-const COLOR_DARK_MAGENTA: i16 = 21;
-const COLOR_DARK_CYAN: i16 = 22;
-const COLOR_DARK_GRAY: i16 = 23;
+pub const COLOR_GRAY: i16 = 16;
+pub const COLOR_DARK_RED: i16 = 17;
+pub const COLOR_DARK_GREEN: i16 = 18;
+pub const COLOR_DARK_BLUE: i16 = 19;
+pub const COLOR_DARK_YELLOW: i16 = 20;
+pub const COLOR_DARK_MAGENTA: i16 = 21;
+pub const COLOR_DARK_CYAN: i16 = 22;
+pub const COLOR_DARK_GRAY: i16 = 23;
 
-static COLOR_PAIR_DEFAULT: i16 = 1;
-static COLOR_PAIR_MOVE_MODE: i16 = 2;
-static COLOR_PAIR_EDIT_MODE: i16 = 3;
+pub const COLOR_PAIR_DEFAULT: i16 = 1;
+pub const COLOR_PAIR_MOVE_MODE: i16 = 2;
+pub const COLOR_PAIR_EDIT_MODE: i16 = 3;
 
 pub fn init() {
     start_color();

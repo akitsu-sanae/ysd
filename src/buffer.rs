@@ -9,6 +9,7 @@ use std::io::Read;
 use std::fs::File;
 
 use ncurses::*;
+use syntax_highlighter;
 
 pub struct Buffer {
     pub lines: Vec<String>,
@@ -61,12 +62,11 @@ impl Buffer {
                 current_line - getmaxy(stdscr) as usize / 2usize
             };
             for i in {0 .. getmaxy(stdscr) as usize} {
-                if i + top_line >= self.lines.len() {
-                    mv(i as i32, 0);
-                } else {
-                    mvprintw(i as i32, 0, self.lines[i + top_line].as_str());
-                }
+                mv(i as i32, 0);
                 clrtoeol();
+                if i + top_line < self.lines.len() {
+                    syntax_highlighter::draw(i, self.lines[i + top_line].as_str());
+                }
             }
         }
     }

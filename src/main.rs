@@ -14,6 +14,7 @@ mod cursor;
 mod editor;
 mod status;
 mod colors;
+mod syntax_highlighter;
 use editor::Editor;
 use buffer::Buffer;
 

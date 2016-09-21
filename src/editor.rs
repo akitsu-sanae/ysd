@@ -12,6 +12,7 @@ use cursor::Direction;
 use status::Status;
 use status::Mode;
 use colors;
+use syntax_highlighter;
 
 pub struct Editor {
     cursor: Cursor,
@@ -29,6 +30,7 @@ impl Editor {
             scrollok(stdscr, true);
             noecho();
             colors::init();
+            syntax_highlighter::init();
         }
 
         Editor {
@@ -70,6 +72,7 @@ impl Editor {
             self.is_quit = true;
         } else {
             match ch as u8 as char {
+                'q' => self.is_quit = true,
                 'a' => self.status.mode = Mode::Edit,
                 'j' => self.cursor.go(Direction::Left, &self.buffers[0]),
                 'l' => self.cursor.go(Direction::Right, &self.buffers[0]),
