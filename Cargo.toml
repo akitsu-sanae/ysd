@@ -7,3 +7,8 @@ authors = ["akitsu"]
 features = ["menu"]
 version = "5.82.0"
 
+[dependencies]
+regex = "0.1"
+toml = "0.2"
+lazy_static = "0.1.*"
+

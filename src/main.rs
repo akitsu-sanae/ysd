@@ -5,6 +5,10 @@
   file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt)
 ============================================================================*/
 
+extern crate toml;
+extern crate regex;
+#[macro_use]
+extern crate lazy_static;
 extern crate ncurses;
 
 use std::env;
