@@ -11,7 +11,7 @@ use colors;
 const COLOR_KEYWORD: i16 = COLOR_BLUE;
 const COLOR_TYPE: i16 = COLOR_RED;
 const COLOR_LITERAL: i16 = COLOR_GREEN;
-const COLOR_OPERATOR: i16 = COLOR_BLUE;
+const COLOR_OPERATOR: i16 = COLOR_CYAN;
 
 const COLOR_PAIR_KEYWORD: i16 = 10;
 const COLOR_PAIR_TYPE: i16 = 11;
@@ -29,20 +29,25 @@ pub fn init() {
 pub fn draw(y: usize, str: &str) {
     let mut word = String::new();
     for (i, ch) in str.char_indices() {
-        word.push(ch);
-        if !check_char(ch) {
+        if check_char(ch) {
+            word.push(ch);
+        } else {
             let color = highlight_attr(word.as_str());
             attron(color);
-            mvprintw(y as i32, (1 + i - word.len()) as i32, word.as_str());
+            mvprintw(y as i32, (i - word.len()) as i32, word.as_str());
+            attroff(color);
+
+            let color = operator_highlight(ch);
+            attron(color);
+            mvprintw(y as i32, i as i32, ch.to_string().as_str());
             attroff(color);
             word.clear();
-            word.push(ch);
         }
     }
 }
 
 fn check_char(ch: char) -> bool {
-    ch.is_digit(10) || ch.is_alphabetic()
+    ch.is_digit(10) || ch.is_alphabetic() || ch == '_'
 }
 
 fn highlight_attr(word: &str) -> attr_t {
@@ -61,16 +66,17 @@ fn highlight_attr(word: &str) -> attr_t {
         _ => {
             match word.trim().parse::<i32>() {
                 Ok(_) => COLOR_PAIR(COLOR_PAIR_LITERAL),
-                Err(_) => {
-                    if word.chars().all(check_char) {
-                        COLOR_PAIR(COLOR_PAIR_OPERATOR)
-                    } else {
-                        COLOR_PAIR(colors::COLOR_PAIR_DEFAULT)
-                    }
-                },
+                Err(_) => COLOR_PAIR(colors::COLOR_PAIR_DEFAULT),
             }
         },
     }
 }
 
+fn operator_highlight(ch: char) -> attr_t {
+    match ch {
+        '+' | '-' | '*' | '/' | '|' |
+        '&' | '=' | '>' | '<' => COLOR_PAIR(COLOR_PAIR_OPERATOR),
+        _ => COLOR_PAIR(colors::COLOR_PAIR_DEFAULT),
+    }
+}
 
