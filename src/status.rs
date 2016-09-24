@@ -7,6 +7,7 @@
 
 use ncurses::*;
 use colors;
+use cursor::Cursor;
 
 pub enum Mode {
     Move,
@@ -25,14 +26,14 @@ impl Status {
         }
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&self, cur: &Cursor) {
         let mut str = String::new();
         match self.mode {
             Mode::Move => str += "Move",
             Mode::Edit => str += "Edit",
         }
         unsafe {
-            str += format!("({}, {})", getcurx(stdscr), getcury(stdscr)).as_str();
+            str += format!("({}, {})", cur.get().0, cur.get().1).as_str();
             let color = colors::mode(&self.mode);
             attron(color | A_BOLD());
             mvprintw(getmaxy(stdscr)-1, 0, str.as_str());

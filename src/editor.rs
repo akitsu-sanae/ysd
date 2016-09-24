@@ -61,8 +61,7 @@ impl Editor {
             buf.draw(self.cursor.get().1 as usize);
         }
 
-        self.cursor.draw(&self.buffers[0]);
-        self.status.draw();
+        self.status.draw(&self.cursor);
         self.cursor.draw(&self.buffers[0]);
     }
 
