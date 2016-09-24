@@ -9,8 +9,6 @@ use std::process::exit;
 use std::env;
 use std::fs::File;
 use std::io::Read;
-use std::io::Write;
-use regex::Regex;
 use toml::{Parser, Value};
 use ncurses::*;
 
@@ -123,52 +121,94 @@ pub fn init() {
     init_pair(COLOR_PAIR_TYPE, COLOR_TYPE, COLOR_BLACK);
     init_pair(COLOR_PAIR_LITERAL, COLOR_LITERAL, COLOR_BLACK);
     init_pair(COLOR_PAIR_OPERATOR, COLOR_OPERATOR, COLOR_BLACK);
+}
 
-    File::create("tmp").and_then(|mut f| {
-        f.write(HIGHLIGHT_PATTERN.lock().unwrap().keyword.join("\n").as_bytes())
-    }).unwrap();
+fn is_identifier_char(c: &char) -> bool {
+    c.is_digit(10) || c.is_alphabetic() || c.clone() == '_'
 }
 
 pub fn draw(y: usize, str: &str) {
-    mvprintw(y as i32, 0, str);
-    for pos in Regex::new(r"\d+").unwrap().find_iter(str) {
-        attron(COLOR_PAIR(COLOR_PAIR_LITERAL));
-        mvprintw(y as i32, pos.0 as i32, &str[pos.0 .. pos.1]);
-        attroff(COLOR_PAIR(COLOR_PAIR_LITERAL));
-    }
-    for pos in Regex::new(r"[a-zA-Z0-9_]+").unwrap().find_iter(str) {
-        let text = &str[pos.0 .. pos.1].to_string();
-        if keywords().contains(text) {
-            attron(COLOR_PAIR(COLOR_PAIR_KEYWORD));
-            mvprintw(y as i32, pos.0 as i32, text.as_str());
-            attroff(COLOR_PAIR(COLOR_PAIR_KEYWORD));
-        } else if types().contains(text) {
-            attron(COLOR_PAIR(COLOR_PAIR_TYPE));
-            mvprintw(y as i32, pos.0 as i32, text.as_str());
-            attroff(COLOR_PAIR(COLOR_PAIR_TYPE));
-        }
-    }
-    for (i, ch) in str.char_indices() {
-        if operators().contains(&ch) {
-            attron(COLOR_PAIR(COLOR_PAIR_OPERATOR));
-            mvprintw(y as i32, i as i32, ch.to_string().as_str());
-            attroff(COLOR_PAIR(COLOR_PAIR_OPERATOR));
-        }
-    }
-    let mut in_string_literal = false;
-    for (i, ch) in str.char_indices() {
-        if ch == '"' && in_string_literal {
-            in_string_literal = false;
-            mvprintw(y as i32, i as i32, ch.to_string().as_str());
-            attroff(COLOR_PAIR(COLOR_PAIR_LITERAL));
-        } else if ch == '"' && !in_string_literal {
-            in_string_literal = true;
-            attron(COLOR_PAIR(COLOR_PAIR_LITERAL));
-        }
-        if in_string_literal {
-            mvprintw(y as i32, i as i32, ch.to_string().as_str());
+
+    let mut word = String::new();
+    let mut is_in_string = false;
+    let mut is_in_char = false;
+    let mut is_in_number = false;
+    let mut is_in_identifier = false;
+    for (i, ch) in format!("{} ", str).as_str().char_indices() {
+        match ch {
+            '"' => {
+                if is_in_char {
+                    word.push('"');
+                } else if is_in_string {
+                    word.push(ch);
+                    attron(COLOR_PAIR(COLOR_PAIR_LITERAL));
+                    mvprintw(y as i32, (1 + i - word.len()) as i32, word.as_str());
+                    attroff(COLOR_PAIR(COLOR_PAIR_LITERAL));
+                    word.clear();
+                    is_in_string = false;
+                } else {
+                    word.push(ch);
+                    is_in_string = true;
+                }
+            },
+            '\'' => {
+                let is_escaped = word.len() == 2 && word.as_bytes()[1] == '\\' as u8;
+                if is_in_char && !is_escaped {
+                    word.push(ch);
+                    attron(COLOR_PAIR(COLOR_PAIR_LITERAL));
+                    mvprintw(y as i32, (1 + i - word.len()) as i32, word.as_str());
+                    attroff(COLOR_PAIR(COLOR_PAIR_LITERAL));
+                    word.clear();
+                    is_in_char = false;
+                } else {
+                    word.push(ch);
+                    is_in_char = true;
+                }
+            },
+            _ => {
+                if is_in_string || is_in_char {
+                    word.push(ch);
+                } else if is_identifier_char(&ch) {
+                    if ch.is_digit(10) && !is_in_identifier {
+                        is_in_number = true;
+                    } else {
+                        is_in_identifier = true;
+                    }
+                    word.push(ch);
+                } else {
+                    if is_in_identifier && keywords().contains(&word){
+                        attron(COLOR_PAIR(COLOR_PAIR_KEYWORD));
+                        mvprintw(y as i32, (i - word.len()) as i32, word.as_str());
+                        attroff(COLOR_PAIR(COLOR_PAIR_KEYWORD));
+                        is_in_identifier = false;
+                    } else if is_in_identifier && types().contains(&word){
+                        attron(COLOR_PAIR(COLOR_PAIR_TYPE));
+                        mvprintw(y as i32, (i - word.len()) as i32, word.as_str());
+                        attroff(COLOR_PAIR(COLOR_PAIR_TYPE));
+                        is_in_identifier = false;
+                    } else if is_in_identifier {
+                        mvprintw(y as i32, (i - word.len()) as i32, word.as_str());
+                        is_in_identifier = false;
+                    } else if is_in_number {
+                        attron(COLOR_PAIR(COLOR_PAIR_LITERAL));
+                        mvprintw(y as i32, (i - word.len()) as i32, word.as_str());
+                        attroff(COLOR_PAIR(COLOR_PAIR_LITERAL));
+                        is_in_number = false;
+                    } else {
+                        mvprintw(y as i32, (i - word.len()) as i32, word.as_str());
+                    }
+
+                    if operators().contains(&ch) {
+                        attron(COLOR_PAIR(COLOR_PAIR_OPERATOR));
+                        mvprintw(y as i32, i as i32, ch.to_string().as_str());
+                        attroff(COLOR_PAIR(COLOR_PAIR_OPERATOR));
+                    } else {
+                        mvprintw(y as i32, i as i32, ch.to_string().as_str());
+                    }
+                    word.clear();
+                }
+            }
         }
     }
 }
-
 
