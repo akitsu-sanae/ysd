@@ -14,13 +14,17 @@ use ncurses::*;
 
 const COLOR_KEYWORD: i16 = COLOR_BLUE;
 const COLOR_TYPE: i16 = COLOR_RED;
-const COLOR_LITERAL: i16 = COLOR_GREEN;
+const COLOR_NUMBER: i16 = COLOR_RED;
+const COLOR_STRING: i16 = COLOR_GREEN;
+const COLOR_CHAR: i16 = COLOR_RED;
 const COLOR_OPERATOR: i16 = COLOR_CYAN;
 
 const COLOR_PAIR_KEYWORD: i16 = 10;
 const COLOR_PAIR_TYPE: i16 = 11;
-const COLOR_PAIR_LITERAL: i16 = 12;
-const COLOR_PAIR_OPERATOR: i16 = 13;
+const COLOR_PAIR_NUMBER: i16 = 12;
+const COLOR_PAIR_STRING: i16 = 13;
+const COLOR_PAIR_CHAR: i16 = 14;
+const COLOR_PAIR_OPERATOR: i16 = 15;
 
 #[derive(Debug)]
 struct HighlightPattern {
@@ -119,7 +123,9 @@ pub fn init() {
     start_color();
     init_pair(COLOR_PAIR_KEYWORD, COLOR_KEYWORD, COLOR_BLACK);
     init_pair(COLOR_PAIR_TYPE, COLOR_TYPE, COLOR_BLACK);
-    init_pair(COLOR_PAIR_LITERAL, COLOR_LITERAL, COLOR_BLACK);
+    init_pair(COLOR_PAIR_NUMBER, COLOR_NUMBER, COLOR_BLACK);
+    init_pair(COLOR_PAIR_STRING, COLOR_STRING, COLOR_BLACK);
+    init_pair(COLOR_PAIR_CHAR, COLOR_CHAR, COLOR_BLACK);
     init_pair(COLOR_PAIR_OPERATOR, COLOR_OPERATOR, COLOR_BLACK);
 }
 
@@ -141,9 +147,9 @@ pub fn draw(y: usize, str: &str) {
                     word.push('"');
                 } else if is_in_string {
                     word.push(ch);
-                    attron(COLOR_PAIR(COLOR_PAIR_LITERAL));
+                    attron(COLOR_PAIR(COLOR_PAIR_STRING));
                     mvprintw(y as i32, (1 + i - word.len()) as i32, word.as_str());
-                    attroff(COLOR_PAIR(COLOR_PAIR_LITERAL));
+                    attroff(COLOR_PAIR(COLOR_PAIR_STRING));
                     word.clear();
                     is_in_string = false;
                 } else {
@@ -155,9 +161,9 @@ pub fn draw(y: usize, str: &str) {
                 let is_escaped = word.len() == 2 && word.as_bytes()[1] == '\\' as u8;
                 if is_in_char && !is_escaped {
                     word.push(ch);
-                    attron(COLOR_PAIR(COLOR_PAIR_LITERAL));
+                    attron(COLOR_PAIR(COLOR_PAIR_CHAR));
                     mvprintw(y as i32, (1 + i - word.len()) as i32, word.as_str());
-                    attroff(COLOR_PAIR(COLOR_PAIR_LITERAL));
+                    attroff(COLOR_PAIR(COLOR_PAIR_CHAR));
                     word.clear();
                     is_in_char = false;
                 } else {
@@ -190,9 +196,9 @@ pub fn draw(y: usize, str: &str) {
                         mvprintw(y as i32, (i - word.len()) as i32, word.as_str());
                         is_in_identifier = false;
                     } else if is_in_number {
-                        attron(COLOR_PAIR(COLOR_PAIR_LITERAL));
+                        attron(COLOR_PAIR(COLOR_PAIR_NUMBER));
                         mvprintw(y as i32, (i - word.len()) as i32, word.as_str());
-                        attroff(COLOR_PAIR(COLOR_PAIR_LITERAL));
+                        attroff(COLOR_PAIR(COLOR_PAIR_NUMBER));
                         is_in_number = false;
                     } else {
                         mvprintw(y as i32, (i - word.len()) as i32, word.as_str());
