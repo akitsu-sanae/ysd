@@ -11,13 +11,7 @@ use std::fs::File;
 use std::io::Read;
 use toml::{Parser, Value};
 use ncurses::*;
-
-const COLOR_KEYWORD: i16 = COLOR_BLUE;
-const COLOR_TYPE: i16 = COLOR_RED;
-const COLOR_NUMBER: i16 = COLOR_RED;
-const COLOR_STRING: i16 = COLOR_GREEN;
-const COLOR_CHAR: i16 = COLOR_RED;
-const COLOR_OPERATOR: i16 = COLOR_CYAN;
+use colors;
 
 const COLOR_PAIR_KEYWORD: i16 = 10;
 const COLOR_PAIR_TYPE: i16 = 11;
@@ -26,17 +20,27 @@ const COLOR_PAIR_STRING: i16 = 13;
 const COLOR_PAIR_CHAR: i16 = 14;
 const COLOR_PAIR_OPERATOR: i16 = 15;
 
+#[derive(Debug, Clone)]
+struct HighlightColors {
+    pub keyword: i16,
+    pub type_: i16,
+    pub number: i16,
+    pub string: i16,
+    pub char: i16,
+    pub operator: i16,
+}
+
 #[derive(Debug)]
 struct HighlightPattern {
     pub keyword: Vec<String>,
     pub type_: Vec<String>,
     pub operator: Vec<char>,
+    pub colors: HighlightColors,
 }
 
-fn load() -> Value {
-    let filename = format!("{}/.ysd.hi", env::var("HOME").unwrap());
+fn load(filename: &str) -> Value {
     let mut data = String::new();
-    File::open(filename.as_str()).and_then(|mut f| {
+    File::open(filename).and_then(|mut f| {
         f.read_to_string(&mut data)
     }).expect("can not open ~/.ysd.hi");
     let mut parser = Parser::new(&data);
@@ -54,9 +58,32 @@ fn load() -> Value {
     }
 }
 
+fn str_to_color(s: &str) -> i16 {
+    match s {
+        "red" => COLOR_RED,
+        "green" => COLOR_GREEN,
+        "blue" => COLOR_BLUE,
+        "yellow" => COLOR_YELLOW,
+        "magenta" => COLOR_MAGENTA,
+        "cyan" => COLOR_CYAN,
+        "black" => COLOR_BLACK,
+        "white" => COLOR_WHITE,
+        "gray" => colors::COLOR_GRAY,
+        "dark red" => colors::COLOR_DARK_RED,
+        "dark green" => colors::COLOR_DARK_GREEN,
+        "dark blue" => colors::COLOR_DARK_BLUE,
+        "dark yellow" => colors::COLOR_DARK_YELLOW,
+        "dark magenta" => colors::COLOR_DARK_MAGENTA,
+        "dark cyan" => colors::COLOR_DARK_CYAN,
+        "dark gray" => colors::COLOR_DARK_GRAY,
+        _ => panic!("no such color: {}", s),
+    }
+}
+
 impl HighlightPattern {
     pub fn new() -> Self {
-        let toml = load();
+
+        let toml = load(format!("{}/.ysd.syntax", env::var("HOME").unwrap()).as_str());
         let toml = toml
             .as_table().expect("invalid highlight file");
 
@@ -83,10 +110,52 @@ impl HighlightPattern {
                 e.as_str().expect("element of operator must be string").as_bytes()[0] as char
             }).collect::<Vec<_> >();
 
-        HighlightPattern {
-            keyword: keywords,
+       let toml = load(format!("{}/.ysd.hi", env::var("HOME").unwrap()).as_str());
+       let toml = toml
+           .as_table().expect("invalid highlight file");
+
+       let keyword_color = toml
+           .get("keyword").expect("can not find keyword color")
+           .as_str().expect("keyword color must be string");
+       let keyword_color = str_to_color(keyword_color);
+
+       let type_color = toml
+           .get("type").expect("can not find type color")
+           .as_str().expect("type color must be string");
+       let type_color = str_to_color(type_color);
+
+       let number_color = toml
+           .get("number").expect("can not find number color")
+           .as_str().expect("number color must be string");
+       let number_color = str_to_color(number_color);
+
+       let string_color = toml
+           .get("string").expect("can not find string color")
+           .as_str().expect("string color must be string");
+       let string_color = str_to_color(string_color);
+
+       let char_color = toml
+           .get("char").expect("can not find char color")
+           .as_str().expect("char color must be string");
+       let char_color = str_to_color(char_color);
+
+       let operator_color = toml
+           .get("operator").expect("can not find operator color")
+           .as_str().expect("operator color must be string");
+       let operator_color = str_to_color(operator_color);
+
+       HighlightPattern {
+           keyword: keywords,
             type_: types,
             operator: operators,
+            colors: HighlightColors {
+                keyword: keyword_color,
+                type_: type_color,
+                number: number_color,
+                string: string_color,
+                char: char_color,
+                operator: operator_color,
+            },
         }
     }
 }
@@ -101,6 +170,9 @@ fn types() -> Vec<String> {
 fn operators() -> Vec<char> {
     HIGHLIGHT_PATTERN.lock().unwrap().operator.clone()
 }
+fn colors() -> HighlightColors {
+    HIGHLIGHT_PATTERN.lock().unwrap().colors.clone()
+}
 
 
 use std::sync::Mutex;
@@ -110,13 +182,14 @@ lazy_static! {
 }
 
 pub fn init() {
+    let colors = colors();
     start_color();
-    init_pair(COLOR_PAIR_KEYWORD, COLOR_KEYWORD, COLOR_BLACK);
-    init_pair(COLOR_PAIR_TYPE, COLOR_TYPE, COLOR_BLACK);
-    init_pair(COLOR_PAIR_NUMBER, COLOR_NUMBER, COLOR_BLACK);
-    init_pair(COLOR_PAIR_STRING, COLOR_STRING, COLOR_BLACK);
-    init_pair(COLOR_PAIR_CHAR, COLOR_CHAR, COLOR_BLACK);
-    init_pair(COLOR_PAIR_OPERATOR, COLOR_OPERATOR, COLOR_BLACK);
+    init_pair(COLOR_PAIR_KEYWORD, colors.keyword, COLOR_BLACK);
+    init_pair(COLOR_PAIR_TYPE, colors.type_, COLOR_BLACK);
+    init_pair(COLOR_PAIR_NUMBER, colors.number, COLOR_BLACK);
+    init_pair(COLOR_PAIR_STRING, colors.string, COLOR_BLACK);
+    init_pair(COLOR_PAIR_CHAR, colors.char, COLOR_BLACK);
+    init_pair(COLOR_PAIR_OPERATOR, colors.operator, COLOR_BLACK);
 }
 
 fn is_identifier_char(c: &char) -> bool {
