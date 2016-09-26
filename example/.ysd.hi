@@ -4,7 +4,7 @@ keyword = [
         "in", "if", "impl", "let", "log", "loop",
         "match", "once", "priv", "pub", "return", "unsafe",
         "white", "use", "mod", "trait", "struct", "enum",
-        "type", "fn", "const", "mut", "ref", "static"
+        "type", "fn", "const", "mut", "ref", "static", "for"
 ]
 
 type = [
@@ -14,15 +14,7 @@ type = [
     "f32", "f64", "str", "self", "Self"
 ]
 
-literal = [
-    "\".*\"",
-    "'.+'",
-    "\\d+",
-    "true",
-    "false"
-]
-
 operator = [
     '+', '-', '*', '/', '|',
-    '&', '=', '>', '<'
+    '&', '=', '>', '<', '{', '}'
 ]

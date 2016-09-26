@@ -30,7 +30,6 @@ const COLOR_PAIR_OPERATOR: i16 = 15;
 struct HighlightPattern {
     pub keyword: Vec<String>,
     pub type_: Vec<String>,
-    pub literal: Vec<String>,
     pub operator: Vec<char>,
 }
 
@@ -77,15 +76,7 @@ impl HighlightPattern {
                 .to_string()
             }).collect::<Vec<_> >();
 
-        let literals = toml
-            .get("literal").expect("can not find literal")
-            .as_slice().expect("literal must be array")
-            .into_iter().map(|e| {
-                e.as_str().expect("element of literal must be string")
-                .to_string()
-            }).collect::<Vec<_> >();
-
-        let operators = toml
+       let operators = toml
             .get("operator").expect("can not find operator")
             .as_slice().expect("operator must be array")
             .into_iter().map(|e| {
@@ -95,7 +86,6 @@ impl HighlightPattern {
         HighlightPattern {
             keyword: keywords,
             type_: types,
-            literal: literals,
             operator: operators,
         }
     }
