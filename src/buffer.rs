@@ -6,6 +6,7 @@
 ============================================================================*/
 
 use std::io::Read;
+use std::io::Write;
 use std::fs::File;
 
 use ncurses::*;
@@ -82,6 +83,33 @@ impl Buffer {
     }
     pub fn line(&self, i: usize) -> &String {
         &self.lines[i]
+    }
+
+    pub fn save(&self) {
+        let current_pos = unsafe {
+            (getcurx(stdscr), getcury(stdscr))
+        };
+        unsafe {
+            mv(getmaxy(stdscr) - 1, 12);
+        }
+        clrtoeol();
+        printw("filename: ");
+        let mut filename = String::new();
+        loop {
+            let ch = getch();
+            if ch as u8 as char == '\n' {
+                break;
+            }
+            filename.push(ch as u8 as char);
+            unsafe {
+                mvprintw(getmaxy(stdscr) - 1, 21 + filename.len() as i32, (ch as u8 as char).to_string().as_str());
+            }
+        }
+
+        File::create(filename.clone()).and_then(|mut f|{
+            f.write(self.lines.join("\n").as_bytes())
+        }).expect("can not create file");
+        mv(current_pos.1, current_pos.0);
     }
 }
 

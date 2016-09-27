@@ -77,6 +77,7 @@ impl Editor {
                 'l' => self.cursor.go(Direction::Right, &self.buffers[0]),
                 'i' => self.cursor.go(Direction::Up, &self.buffers[0]),
                 'k' => self.cursor.go(Direction::Down, &self.buffers[0]),
+                's' => self.buffers[0].save(),
                 _ => (),
             }
         }
