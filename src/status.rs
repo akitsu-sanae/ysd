@@ -16,6 +16,7 @@ pub enum Mode {
 
 pub struct Status {
     pub mode: Mode,
+    pub message: String,
 }
 
 impl Status {
@@ -23,6 +24,7 @@ impl Status {
     pub fn new() -> Self {
         Status {
             mode: Mode::Move,
+            message: String::new(),
         }
     }
 
@@ -32,14 +34,22 @@ impl Status {
             Mode::Move => str += "Move",
             Mode::Edit => str += "Edit",
         }
+        str += format!("({}, {})", cur.get().0, cur.get().1).as_str();
+
+        let (left, center, _) = colors::mode(&self.mode);
+        attron(left | A_BOLD());
         unsafe {
-            str += format!("({}, {})", cur.get().0, cur.get().1).as_str();
-            let color = colors::mode(&self.mode);
-            attron(color | A_BOLD());
             mvprintw(getmaxy(stdscr)-1, 0, str.as_str());
-            clrtoeol();
-            attroff(color | A_BOLD());
         }
+        attroff(left | A_BOLD());
+        clrtoeol();
+
+        attron(center | A_BOLD());
+        unsafe {
+            mvprintw(getmaxy(stdscr)-1, str.len() as i32 + 1, self.message.as_str());
+        }
+        attroff(center | A_BOLD());
+        clrtoeol();
     }
 }
 

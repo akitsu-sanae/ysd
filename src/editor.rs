@@ -77,7 +77,26 @@ impl Editor {
                 'l' => self.cursor.go(Direction::Right, &self.buffers[0]),
                 'i' => self.cursor.go(Direction::Up, &self.buffers[0]),
                 'k' => self.cursor.go(Direction::Down, &self.buffers[0]),
-                's' => self.buffers[0].save(),
+                's' => {
+                    let mut filename = String::new();
+                    unsafe {
+                        mv(getmaxy(stdscr) - 1, 12);
+                    }
+                    printw("filename: ");
+                    clrtoeol();
+                    loop {
+                        let ch = getch();
+                        if ch as u8 as char == '\n' {
+                            break;
+                        }
+                        filename.push(ch as u8 as char);
+                        unsafe {
+                            mvprintw(getmaxy(stdscr) - 1, 21 + filename.len() as i32, (ch as u8 as char).to_string().as_str());
+                        }
+                    }
+                    self.buffers[0].save(filename.as_str());
+                    self.status.message = format!("saved at {}", filename);
+                },
                 _ => (),
             }
         }

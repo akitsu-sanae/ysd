@@ -40,10 +40,16 @@ pub fn init() {
     bkgd(' ' as chtype | COLOR_PAIR(COLOR_PAIR_DEFAULT) as chtype);
 }
 
-pub fn mode(mode: &Mode) -> u64 {
+pub fn mode(mode: &Mode) -> (u64, u64, u64) {
     match mode {
-        &Mode::Move => COLOR_PAIR(COLOR_PAIR_MOVE_MODE),
-        &Mode::Edit => COLOR_PAIR(COLOR_PAIR_EDIT_MODE),
+        &Mode::Move => (
+            COLOR_PAIR(COLOR_PAIR_MOVE_MODE),
+            COLOR_PAIR(COLOR_PAIR_DEFAULT),
+            COLOR_PAIR(COLOR_PAIR_DEFAULT)),
+        &Mode::Edit => (
+            COLOR_PAIR(COLOR_PAIR_EDIT_MODE),
+            COLOR_PAIR(COLOR_PAIR_DEFAULT),
+            COLOR_PAIR(COLOR_PAIR_DEFAULT)),
     }
 }
 
