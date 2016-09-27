@@ -19,8 +19,12 @@ pub const COLOR_DARK_CYAN: i16 = 22;
 pub const COLOR_DARK_GRAY: i16 = 23;
 
 pub const COLOR_PAIR_DEFAULT: i16 = 1;
-pub const COLOR_PAIR_MOVE_MODE: i16 = 2;
-pub const COLOR_PAIR_EDIT_MODE: i16 = 3;
+pub const COLOR_PAIR_MOVE_MODE_LEFT: i16 = 2;
+pub const COLOR_PAIR_MOVE_MODE_CENTER: i16 = 3;
+pub const COLOR_PAIR_MOVE_MODE_RIGHT: i16 = 4;
+pub const COLOR_PAIR_EDIT_MODE_LEFT: i16 = 5;
+pub const COLOR_PAIR_EDIT_MODE_CENTER: i16 = 6;
+pub const COLOR_PAIR_EDIT_MODE_RIGHT: i16 = 7;
 
 pub fn init() {
     start_color();
@@ -34,8 +38,12 @@ pub fn init() {
     init_color(COLOR_DARK_GRAY, 80, 80, 80);
 
     init_pair(COLOR_PAIR_DEFAULT, COLOR_WHITE, COLOR_BLACK);
-    init_pair(COLOR_PAIR_MOVE_MODE, COLOR_WHITE, COLOR_BLUE);
-    init_pair(COLOR_PAIR_EDIT_MODE, COLOR_WHITE, COLOR_GREEN);
+    init_pair(COLOR_PAIR_MOVE_MODE_LEFT, COLOR_WHITE, COLOR_BLUE);
+    init_pair(COLOR_PAIR_MOVE_MODE_CENTER, COLOR_WHITE, COLOR_GRAY);
+    init_pair(COLOR_PAIR_MOVE_MODE_RIGHT, COLOR_WHITE, COLOR_BLACK);
+    init_pair(COLOR_PAIR_EDIT_MODE_LEFT, COLOR_WHITE, COLOR_GREEN);
+    init_pair(COLOR_PAIR_EDIT_MODE_CENTER, COLOR_WHITE, COLOR_GRAY);
+    init_pair(COLOR_PAIR_EDIT_MODE_RIGHT, COLOR_WHITE, COLOR_BLACK);
 
     bkgd(' ' as chtype | COLOR_PAIR(COLOR_PAIR_DEFAULT) as chtype);
 }
@@ -43,13 +51,13 @@ pub fn init() {
 pub fn mode(mode: &Mode) -> (u64, u64, u64) {
     match mode {
         &Mode::Move => (
-            COLOR_PAIR(COLOR_PAIR_MOVE_MODE),
-            COLOR_PAIR(COLOR_PAIR_DEFAULT),
-            COLOR_PAIR(COLOR_PAIR_DEFAULT)),
+            COLOR_PAIR(COLOR_PAIR_MOVE_MODE_LEFT),
+            COLOR_PAIR(COLOR_PAIR_MOVE_MODE_CENTER),
+            COLOR_PAIR(COLOR_PAIR_MOVE_MODE_RIGHT)),
         &Mode::Edit => (
-            COLOR_PAIR(COLOR_PAIR_EDIT_MODE),
-            COLOR_PAIR(COLOR_PAIR_DEFAULT),
-            COLOR_PAIR(COLOR_PAIR_DEFAULT)),
+            COLOR_PAIR(COLOR_PAIR_EDIT_MODE_LEFT),
+            COLOR_PAIR(COLOR_PAIR_EDIT_MODE_CENTER),
+            COLOR_PAIR(COLOR_PAIR_EDIT_MODE_RIGHT)),
     }
 }
 
