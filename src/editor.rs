@@ -110,6 +110,10 @@ impl Editor {
                 self.buffers[0].erase(self.cursor.get());
                 self.cursor.go(Direction::Left, &self.buffers[0]);
             },
+            10 => {
+                self.buffers[0].lines.insert(self.cursor.get().1 + 1, "".to_string());
+                self.cursor.go(Direction::Down, &self.buffers[0]);
+            },
             _ => {
                 self.buffers[0].insert(self.cursor.get(), ch as u8 as char);
                 self.cursor.go(Direction::Right, &self.buffers[0]);
