@@ -34,7 +34,7 @@ impl Status {
             Mode::Move => str += "Move",
             Mode::Edit => str += "Edit",
         }
-        str += format!("({}, {})", cur.get().0, cur.get().1).as_str();
+        str += format!("({}, {})", cur.x, cur.y).as_str();
 
         let (left, center, _) = colors::mode(&self.mode);
         attron(left | A_BOLD());

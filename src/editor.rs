@@ -58,7 +58,7 @@ impl Editor {
 
     pub fn draw(&self) {
         for ref buf in &self.buffers {
-            buf.draw(self.cursor.get().1 as usize);
+            buf.draw(self.cursor.y);
         }
 
         self.status.draw(&self.cursor);
@@ -107,15 +107,24 @@ impl Editor {
         match ch {
             27 => self.status.mode = Mode::Move,
             127 | KEY_BACKSPACE => {
-                self.buffers[0].erase(self.cursor.get());
-                self.cursor.go(Direction::Left, &self.buffers[0]);
+                if self.cursor.x == 0 || self.buffers[0].lines[self.cursor.y] == "" { // erase newline character
+                    let y = self.cursor.y;
+                    let x = self.buffers[0].lines[y-1].len();
+                    self.buffers[0].lines[y-1] += self.buffers[0].lines[y].clone().as_str();
+                    self.buffers[0].lines.remove(y);
+                    self.cursor.y -= 1;
+                    self.cursor.x = x;
+                } else {
+                    self.cursor.go(Direction::Left, &self.buffers[0]);
+                    self.buffers[0].erase(self.cursor.pos());
+                }
             },
             10 => {
-                self.buffers[0].lines.insert(self.cursor.get().1 + 1, "".to_string());
+                self.buffers[0].lines.insert(self.cursor.y + 1, "".to_string());
                 self.cursor.go(Direction::Down, &self.buffers[0]);
             },
             _ => {
-                self.buffers[0].insert(self.cursor.get(), ch as u8 as char);
+                self.buffers[0].insert(self.cursor.pos(), ch as u8 as char);
                 self.cursor.go(Direction::Right, &self.buffers[0]);
             }
         }

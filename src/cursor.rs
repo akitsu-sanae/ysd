@@ -9,8 +9,8 @@ use ncurses::*;
 use buffer::Buffer;
 
 pub struct Cursor {
-    x: usize,
-    y: usize,
+    pub x: usize,
+    pub y: usize,
 }
 
 pub enum Direction {
@@ -73,7 +73,7 @@ impl Cursor {
         }
     }
 
-    pub fn get(&self) -> (usize, usize) {
+    pub fn pos(&self) -> (usize, usize) {
         (self.x, self.y)
     }
 }
