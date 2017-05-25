@@ -68,6 +68,7 @@ fn str_to_color(s: &str) -> i16 {
         "cyan" => COLOR_CYAN,
         "black" => COLOR_BLACK,
         "white" => COLOR_WHITE,
+        "trans" => colors::COLOR_TRANS,
         "gray" => colors::COLOR_GRAY,
         "dark red" => colors::COLOR_DARK_RED,
         "dark green" => colors::COLOR_DARK_GREEN,
@@ -184,12 +185,12 @@ lazy_static! {
 pub fn init() {
     let colors = colors();
     start_color();
-    init_pair(COLOR_PAIR_KEYWORD, colors.keyword, COLOR_BLACK);
-    init_pair(COLOR_PAIR_TYPE, colors.type_, COLOR_BLACK);
-    init_pair(COLOR_PAIR_NUMBER, colors.number, COLOR_BLACK);
-    init_pair(COLOR_PAIR_STRING, colors.string, COLOR_BLACK);
-    init_pair(COLOR_PAIR_CHAR, colors.char, COLOR_BLACK);
-    init_pair(COLOR_PAIR_OPERATOR, colors.operator, COLOR_BLACK);
+    init_pair(COLOR_PAIR_KEYWORD, colors.keyword, colors::COLOR_TRANS);
+    init_pair(COLOR_PAIR_TYPE, colors.type_, colors::COLOR_TRANS);
+    init_pair(COLOR_PAIR_NUMBER, colors.number, colors::COLOR_TRANS);
+    init_pair(COLOR_PAIR_STRING, colors.string, colors::COLOR_TRANS);
+    init_pair(COLOR_PAIR_CHAR, colors.char, colors::COLOR_TRANS);
+    init_pair(COLOR_PAIR_OPERATOR, colors.operator, colors::COLOR_TRANS);
 }
 
 fn is_identifier_char(c: &char) -> bool {
