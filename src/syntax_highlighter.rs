@@ -5,7 +5,6 @@
   file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt)
 ============================================================================*/
 
-use std::process::exit;
 use std::env;
 use std::fs::File;
 use std::io::Read;
@@ -38,22 +37,24 @@ struct HighlightPattern {
     pub colors: HighlightColors,
 }
 
-fn load(filename: &str) -> Value {
+fn load(filename: &str) -> Result<Value, String> {
     let mut data = String::new();
     File::open(filename).and_then(|mut f| {
         f.read_to_string(&mut data)
-    }).expect("can not open ~/.ysd.hi");
+    }).map_err(|_| format!("can not find: {}", filename))?;
     let mut parser = Parser::new(&data);
     match parser.parse() {
-        Some(toml) => Value::Table(toml),
+        Some(toml) => Ok(Value::Table(toml)),
             None => {
+                let mut msg = "".to_string();
                 for err in &parser.errors {
                     let (low_line, low_col) = parser.to_linecol(err.lo);
                     let (hi_line, hi_col) = parser.to_linecol(err.hi);
-                    println!("fail parsing packages.toml at {}:{}-{}:{} : {}",
-                             low_line, low_col, hi_line, hi_col, err.desc);
+                    msg += format!("fail parsing {} at {}:{}-{}:{} : {}",
+                                   filename,
+                                   low_line, low_col, hi_line, hi_col, err.desc).as_str();
                 }
-                exit(-1);
+                Err(msg)
             },
     }
 }
@@ -81,82 +82,112 @@ fn str_to_color(s: &str) -> i16 {
     }
 }
 
-impl HighlightPattern {
-    pub fn new() -> Self {
-
-        let toml = load(format!("{}/.ysd.syntax", env::var("HOME").unwrap()).as_str());
+impl HighlightColors {
+    fn new() -> Result<Self, String> {
+        let toml = load(format!("{}/.ysd.hi", env::var("HOME").unwrap()).as_str())?;
         let toml = toml
-            .as_table().expect("invalid highlight file");
+            .as_table().ok_or("invalid highlight file".to_string())?;
+
+        let keyword_color = toml
+            .get("keyword").ok_or("can not find keyword color".to_string())?
+            .as_str().ok_or("keyword color must be string".to_string())?;
+        let keyword_color = str_to_color(keyword_color);
+
+        let type_color = toml
+            .get("type").ok_or("can not find type color".to_string())?
+            .as_str().ok_or("type color must be string".to_string())?;
+        let type_color = str_to_color(type_color);
+
+        let number_color = toml
+            .get("number").ok_or("can not find number color".to_string())?
+            .as_str().ok_or("number color must be string".to_string())?;
+        let number_color = str_to_color(number_color);
+
+        let string_color = toml
+            .get("string").ok_or("can not find string color".to_string())?
+            .as_str().ok_or("string color must be string".to_string())?;
+        let string_color = str_to_color(string_color);
+
+        let char_color = toml
+            .get("char").ok_or("can not find char color".to_string())?
+            .as_str().ok_or("char color must be string".to_string())?;
+        let char_color = str_to_color(char_color);
+
+        let operator_color = toml
+            .get("operator").ok_or("can not find operator color".to_string())?
+            .as_str().ok_or("operator color must be string".to_string())?;
+        let operator_color = str_to_color(operator_color);
+        Ok(HighlightColors {
+            keyword: keyword_color,
+            type_: type_color,
+            number: number_color,
+            string: string_color,
+            char: char_color,
+            operator: operator_color,
+        })
+    }
+
+    fn default() -> Self {
+        HighlightColors {
+            keyword: COLOR_WHITE,
+            type_: COLOR_WHITE,
+            number: COLOR_WHITE,
+            string: COLOR_WHITE,
+            char: COLOR_WHITE,
+            operator: COLOR_WHITE,
+        }
+    }
+}
+
+impl HighlightPattern {
+    pub fn new() -> Result<Self, String> {
+
+        let toml = load(format!("{}/.ysd.syntax", env::var("HOME").unwrap()).as_str())?;
+        let toml = toml
+            .as_table().ok_or("invalid highlight file".to_string())?;
 
         let keywords = toml
-            .get("keyword").expect("can not find keyword")
-            .as_slice().expect("keyword must be array")
+            .get("keyword").ok_or("can not find keyword".to_string())?
+            .as_slice().ok_or("keyword must be array".to_string())?
             .into_iter().map(|e| {
                 e.as_str().expect("element of keyword must be string")
                 .to_string()
             }).collect::<Vec<_> >();
 
         let types = toml
-            .get("type").expect("can not find type")
-            .as_slice().expect("type must be array")
+            .get("type").ok_or("can not find type".to_string())?
+            .as_slice().ok_or("type must be array".to_string())?
             .into_iter().map(|e| {
                 e.as_str().expect("element of type must be string")
                 .to_string()
             }).collect::<Vec<_> >();
 
        let operators = toml
-            .get("operator").expect("can not find operator")
-            .as_slice().expect("operator must be array")
+            .get("operator").ok_or("can not find operator".to_string())?
+            .as_slice().ok_or("operator must be array".to_string())?
             .into_iter().map(|e| {
                 e.as_str().expect("element of operator must be string").as_bytes()[0] as char
             }).collect::<Vec<_> >();
 
-       let toml = load(format!("{}/.ysd.hi", env::var("HOME").unwrap()).as_str());
-       let toml = toml
-           .as_table().expect("invalid highlight file");
+       let highlight_colors = HighlightColors::new().unwrap_or_else(|msg| {
+           println!("{}", msg);
+           HighlightColors::default()
+       });
 
-       let keyword_color = toml
-           .get("keyword").expect("can not find keyword color")
-           .as_str().expect("keyword color must be string");
-       let keyword_color = str_to_color(keyword_color);
-
-       let type_color = toml
-           .get("type").expect("can not find type color")
-           .as_str().expect("type color must be string");
-       let type_color = str_to_color(type_color);
-
-       let number_color = toml
-           .get("number").expect("can not find number color")
-           .as_str().expect("number color must be string");
-       let number_color = str_to_color(number_color);
-
-       let string_color = toml
-           .get("string").expect("can not find string color")
-           .as_str().expect("string color must be string");
-       let string_color = str_to_color(string_color);
-
-       let char_color = toml
-           .get("char").expect("can not find char color")
-           .as_str().expect("char color must be string");
-       let char_color = str_to_color(char_color);
-
-       let operator_color = toml
-           .get("operator").expect("can not find operator color")
-           .as_str().expect("operator color must be string");
-       let operator_color = str_to_color(operator_color);
-
-       HighlightPattern {
+       Ok(HighlightPattern {
            keyword: keywords,
-            type_: types,
-            operator: operators,
-            colors: HighlightColors {
-                keyword: keyword_color,
-                type_: type_color,
-                number: number_color,
-                string: string_color,
-                char: char_color,
-                operator: operator_color,
-            },
+           type_: types,
+           operator: operators,
+           colors: highlight_colors,
+        })
+    }
+
+    fn default() -> Self {
+        HighlightPattern {
+            keyword: vec![],
+            type_: vec![],
+            operator: vec![],
+            colors: HighlightColors::default()
         }
     }
 }
@@ -179,7 +210,10 @@ fn colors() -> HighlightColors {
 use std::sync::Mutex;
 lazy_static! {
     static ref HIGHLIGHT_PATTERN: Mutex<HighlightPattern> =
-        Mutex::new(HighlightPattern::new());
+        Mutex::new(HighlightPattern::new().unwrap_or_else(|msg| {
+            println!("{}", msg);
+            HighlightPattern::default()
+        }));
 }
 
 pub fn init() {
