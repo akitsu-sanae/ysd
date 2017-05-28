@@ -149,25 +149,23 @@ impl HighlightPattern {
         let keywords = toml
             .get("keyword").ok_or("can not find keyword".to_string())?
             .as_slice().ok_or("keyword must be array".to_string())?
-            .into_iter().map(|e| {
-                e.as_str().expect("element of keyword must be string")
-                .to_string()
-            }).collect::<Vec<_> >();
+            .into_iter()
+               .map(|e| e.as_str().map(str::to_string).ok_or("keyword must be string".to_string()))
+            .collect::<Result<Vec<_>, _>>()?;
 
         let types = toml
             .get("type").ok_or("can not find type".to_string())?
             .as_slice().ok_or("type must be array".to_string())?
-            .into_iter().map(|e| {
-                e.as_str().expect("element of type must be string")
-                .to_string()
-            }).collect::<Vec<_> >();
+            .into_iter()
+               .map(|e| e.as_str().map(str::to_string).ok_or("keyword must be string".to_string()))
+            .collect::<Result<Vec<_>, _>>()?;
 
        let operators = toml
             .get("operator").ok_or("can not find operator".to_string())?
             .as_slice().ok_or("operator must be array".to_string())?
-            .into_iter().map(|e| {
-                e.as_str().expect("element of operator must be string").as_bytes()[0] as char
-            }).collect::<Vec<_> >();
+            .into_iter()
+               .map(|e| e.as_str().map(|e| e.as_bytes()[0] as char).ok_or("element of operator must be string".to_string()))
+            .collect::<Result<Vec<_>, _>>()?;
 
        let highlight_colors = HighlightColors::new().unwrap_or_else(|msg| {
            println!("{}", msg);
