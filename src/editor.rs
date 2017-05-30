@@ -72,17 +72,17 @@ impl Editor {
         let ch = getch();
         if ch == KEY_F1 {
             self.is_quit = true;
-        } else {
-            match ch as u8 as char {
-                'q' => self.is_quit = true,
-                'a' => self.status.mode = Mode::Edit,
-                'j' => self.cursor.go(Direction::Left, &self.buffers[0]),
-                'l' => self.cursor.go(Direction::Right, &self.buffers[0]),
-                'i' => self.cursor.go(Direction::Up, &self.buffers[0]),
-                'k' => self.cursor.go(Direction::Down, &self.buffers[0]),
-                ':' => self.status.mode = Mode::Command,
-                _ => (),
-            }
+            return;
+        }
+        match ch as u8 as char {
+            'q' => self.is_quit = true,
+            'a' => self.status.mode = Mode::Edit,
+            'j' => self.cursor.go(Direction::Left, &self.buffers[0]),
+            'l' => self.cursor.go(Direction::Right, &self.buffers[0]),
+            'i' => self.cursor.go(Direction::Up, &self.buffers[0]),
+            'k' => self.cursor.go(Direction::Down, &self.buffers[0]),
+            ':' => self.status.mode = Mode::Command,
+            _ => (),
         }
     }
 
