@@ -9,9 +9,11 @@ use ncurses::*;
 use colors;
 use cursor::Cursor;
 
+#[derive(PartialEq, Eq)]
 pub enum Mode {
     Move,
     Edit,
+    Command,
 }
 
 pub struct Status {
@@ -33,6 +35,7 @@ impl Status {
         match self.mode {
             Mode::Move => str += "Move",
             Mode::Edit => str += "Edit",
+            Mode::Command => str += "Command",
         }
         str += format!("({}, {})", cur.x, cur.y).as_str();
 

@@ -18,10 +18,15 @@ Ysd is a text editor made with Rust lang.
     - i ... move up
     - k ... move down
     - a ... chage mode to Edit
+    - : ... change mode to Command
     - F1 ... exit
 * in Edit Mode
     - Esc ... change mode to Move
     - otherwise ... insert charactor at current cursor position.
+* in Command Mode
+    - move ... change mode to Move
+    - save [filename] ... save current buffer as [filename]
+
 
 # Copyright
 Copyright (C) 2016 akitsu sanae.  
