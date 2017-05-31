@@ -8,9 +8,10 @@
 use std::env;
 use std::fs::File;
 use std::io::Read;
+use std::str::FromStr;
 use toml::{Parser, Value};
 use ncurses::*;
-use colors;
+use colors::Color;
 
 const COLOR_PAIR_KEYWORD: i16 = 10;
 const COLOR_PAIR_TYPE: i16 = 11;
@@ -21,12 +22,12 @@ const COLOR_PAIR_OPERATOR: i16 = 15;
 
 #[derive(Debug, Clone)]
 struct HighlightColors {
-    pub keyword: i16,
-    pub type_: i16,
-    pub number: i16,
-    pub string: i16,
-    pub char: i16,
-    pub operator: i16,
+    pub keyword: Color,
+    pub type_: Color,
+    pub number: Color,
+    pub string: Color,
+    pub char: Color,
+    pub operator: Color,
 }
 
 #[derive(Debug)]
@@ -59,29 +60,6 @@ fn load(filename: &str) -> Result<Value, String> {
     }
 }
 
-fn str_to_color(s: &str) -> i16 {
-    match s {
-        "red" => COLOR_RED,
-        "green" => COLOR_GREEN,
-        "blue" => COLOR_BLUE,
-        "yellow" => COLOR_YELLOW,
-        "magenta" => COLOR_MAGENTA,
-        "cyan" => COLOR_CYAN,
-        "black" => COLOR_BLACK,
-        "white" => COLOR_WHITE,
-        "trans" => colors::COLOR_TRANS,
-        "gray" => colors::COLOR_GRAY,
-        "dark red" => colors::COLOR_DARK_RED,
-        "dark green" => colors::COLOR_DARK_GREEN,
-        "dark blue" => colors::COLOR_DARK_BLUE,
-        "dark yellow" => colors::COLOR_DARK_YELLOW,
-        "dark magenta" => colors::COLOR_DARK_MAGENTA,
-        "dark cyan" => colors::COLOR_DARK_CYAN,
-        "dark gray" => colors::COLOR_DARK_GRAY,
-        _ => panic!("no such color: {}", s),
-    }
-}
-
 impl HighlightColors {
     fn new() -> Result<Self, String> {
         let toml = load(format!("{}/.ysd.hi", env::var("HOME").unwrap()).as_str())?;
@@ -91,32 +69,32 @@ impl HighlightColors {
         let keyword_color = toml
             .get("keyword").ok_or("can not find keyword color".to_string())?
             .as_str().ok_or("keyword color must be string".to_string())?;
-        let keyword_color = str_to_color(keyword_color);
+        let keyword_color = Color::from_str(keyword_color)?;
 
         let type_color = toml
             .get("type").ok_or("can not find type color".to_string())?
             .as_str().ok_or("type color must be string".to_string())?;
-        let type_color = str_to_color(type_color);
+        let type_color = Color::from_str(type_color)?;
 
         let number_color = toml
             .get("number").ok_or("can not find number color".to_string())?
             .as_str().ok_or("number color must be string".to_string())?;
-        let number_color = str_to_color(number_color);
+        let number_color = Color::from_str(number_color)?;
 
         let string_color = toml
             .get("string").ok_or("can not find string color".to_string())?
             .as_str().ok_or("string color must be string".to_string())?;
-        let string_color = str_to_color(string_color);
+        let string_color = Color::from_str(string_color)?;
 
         let char_color = toml
             .get("char").ok_or("can not find char color".to_string())?
             .as_str().ok_or("char color must be string".to_string())?;
-        let char_color = str_to_color(char_color);
+        let char_color = Color::from_str(char_color)?;
 
         let operator_color = toml
             .get("operator").ok_or("can not find operator color".to_string())?
             .as_str().ok_or("operator color must be string".to_string())?;
-        let operator_color = str_to_color(operator_color);
+        let operator_color = Color::from_str(operator_color)?;
         Ok(HighlightColors {
             keyword: keyword_color,
             type_: type_color,
@@ -129,12 +107,12 @@ impl HighlightColors {
 
     fn default() -> Self {
         HighlightColors {
-            keyword: COLOR_WHITE,
-            type_: COLOR_WHITE,
-            number: COLOR_WHITE,
-            string: COLOR_WHITE,
-            char: COLOR_WHITE,
-            operator: COLOR_WHITE,
+            keyword: Color::White,
+            type_: Color::White,
+            number: Color::White,
+            string: Color::White,
+            char: Color::White,
+            operator: Color::White,
         }
     }
 }
@@ -217,12 +195,12 @@ lazy_static! {
 pub fn init() {
     let colors = colors();
     start_color();
-    init_pair(COLOR_PAIR_KEYWORD, colors.keyword, colors::COLOR_TRANS);
-    init_pair(COLOR_PAIR_TYPE, colors.type_, colors::COLOR_TRANS);
-    init_pair(COLOR_PAIR_NUMBER, colors.number, colors::COLOR_TRANS);
-    init_pair(COLOR_PAIR_STRING, colors.string, colors::COLOR_TRANS);
-    init_pair(COLOR_PAIR_CHAR, colors.char, colors::COLOR_TRANS);
-    init_pair(COLOR_PAIR_OPERATOR, colors.operator, colors::COLOR_TRANS);
+    init_pair(COLOR_PAIR_KEYWORD, colors.keyword as i16, Color::Trans as i16);
+    init_pair(COLOR_PAIR_TYPE, colors.type_ as i16, Color::Trans as i16);
+    init_pair(COLOR_PAIR_NUMBER, colors.number as i16, Color::Trans as i16);
+    init_pair(COLOR_PAIR_STRING, colors.string as i16, Color::Trans as i16);
+    init_pair(COLOR_PAIR_CHAR, colors.char as i16, Color::Trans as i16);
+    init_pair(COLOR_PAIR_OPERATOR, colors.operator as i16, Color::Trans as i16);
 }
 
 fn is_identifier_char(c: &char) -> bool {

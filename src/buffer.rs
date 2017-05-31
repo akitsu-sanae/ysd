@@ -13,7 +13,7 @@ use ncurses::*;
 use syntax_highlighter;
 
 pub struct Buffer {
-    pub lines: Vec<String>,
+    pub lines: Vec<String>
 }
 
 impl Buffer {
@@ -25,7 +25,7 @@ impl Buffer {
         }).expect("can not open file");
 
         Buffer {
-            lines: text.lines().map(str::to_string).collect()
+            lines: text.lines().map(str::to_string).collect(),
         }
     }
 

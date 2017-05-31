@@ -6,10 +6,12 @@
 ============================================================================*/
 
 use ncurses::*;
-use colors;
 use cursor::Cursor;
+use colors::DEFAULT;
+use display;
 
-#[derive(PartialEq, Eq)]
+
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub enum Mode {
     Move,
     Edit,
@@ -39,19 +41,19 @@ impl Status {
         }
         str += format!("({}, {})", cur.x, cur.y).as_str();
 
-        let (left, center, _) = colors::mode(&self.mode);
-        attron(left | A_BOLD());
+        let mode_color = display::mode_to_modecolor(self.mode).color();
+        attron(mode_color | A_BOLD());
         unsafe {
             mvprintw(getmaxy(stdscr)-1, 0, str.as_str());
         }
-        attroff(left | A_BOLD());
+        attroff(mode_color | A_BOLD());
         clrtoeol();
 
-        attron(center | A_BOLD());
+        attron(DEFAULT | A_BOLD());
         unsafe {
             mvprintw(getmaxy(stdscr)-1, str.len() as i32 + 1, self.message.as_str());
         }
-        attroff(center | A_BOLD());
+        attroff(DEFAULT | A_BOLD());
         clrtoeol();
     }
 }

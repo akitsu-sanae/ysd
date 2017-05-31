@@ -7,11 +7,9 @@
 
 use ncurses::*;
 use buffer::Buffer;
-use cursor::Cursor;
-use cursor::Direction;
-use status::Status;
-use status::Mode;
-use colors;
+use cursor::{Cursor, Direction};
+use status::{Status, Mode};
+use display;
 use syntax_highlighter;
 
 pub struct Editor {
@@ -23,15 +21,8 @@ pub struct Editor {
 
 impl Editor {
     pub fn new() -> Self {
-        unsafe {
-            initscr();
-            raw();
-            keypad(stdscr, true);
-            scrollok(stdscr, true);
-            noecho();
-            colors::init();
-            syntax_highlighter::init();
-        }
+        display::init();
+        syntax_highlighter::init();
 
         Editor {
             cursor: Cursor::new(),
@@ -50,6 +41,7 @@ impl Editor {
     }
 
     pub fn update(&mut self) {
+        self.status.message = "".to_string();
         match self.status.mode {
             Mode::Move => self.update_move(),
             Mode::Edit => self.update_edit(),
