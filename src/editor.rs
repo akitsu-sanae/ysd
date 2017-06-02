@@ -106,10 +106,31 @@ impl Editor {
         }
     }
 
+    fn get_command(&self) -> String {
+        let mut result = String::new();
+        unsafe {
+            mv(getmaxy(stdscr) - 1, 14);
+        }
+        clrtoeol();
+        loop {
+            let ch = getch();
+            if ch as u8 as char == '\n' {
+                break;
+            } if ch == KEY_BACKSPACE && !result.is_empty() {
+                result.pop().unwrap();
+            } else {
+                result.push(ch as u8 as char);
+            }
+            unsafe {
+                mvprintw(getmaxy(stdscr) - 1, 14, result.as_str());
+            }
+            clrtoeol();
+        }
+        result
+    }
+
     fn update_command(&mut self) {
-        let mut input = String::new();
-        getstr(&mut input);
-        match input.as_str().trim() {
+        match self.get_command().as_str().trim() {
             "move" => self.status.mode = Mode::Move,
             "edit" => self.status.mode = Mode::Edit,
             input => {
