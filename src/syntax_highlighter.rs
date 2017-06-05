@@ -207,14 +207,24 @@ fn is_identifier_char(c: &char) -> bool {
     c.is_digit(10) || c.is_alphabetic() || c.clone() == '_'
 }
 
-pub fn draw(y: usize, str: &str) {
+pub fn draw(y: usize, str: &str, visible_line_numbers: bool) {
 
     let mut word = String::new();
     let mut is_in_string = false;
     let mut is_in_char = false;
     let mut is_in_number = false;
     let mut is_in_identifier = false;
+    let x = if visible_line_numbers {
+        let linenum = format!("{0:<3}", y+1);
+        attron(COLOR_PAIR(COLOR_PAIR_STRING));
+        mvprintw(y as i32, 0, linenum.as_str());
+        attroff(COLOR_PAIR(COLOR_PAIR_STRING));
+        3
+    } else {
+        0
+    };
     for (i, ch) in format!("{} ", str).as_str().char_indices() {
+        let i = i + x;
         match ch {
             '"' => {
                 if is_in_char {

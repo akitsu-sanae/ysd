@@ -50,10 +50,8 @@ impl Editor {
     }
 
     pub fn draw(&self) {
-        if self.status.mode != Mode::Command {
-            for ref buf in &self.buffers {
-                buf.draw(self.cursor.y);
-            }
+        for ref buf in &self.buffers {
+            buf.draw(self.cursor.y, self.status.visible_line_number);
         }
 
         self.status.draw(&self.cursor);
@@ -140,6 +138,12 @@ impl Editor {
                         self.buffers[0].save(inputs[1]);
                         self.status.message = format!("saved at {}", inputs[1]);
                     }
+                    "enable" | "disable" => {
+                        match inputs[1] {
+                            "linenum" => self.status.visible_line_number = inputs[0] == "enable",
+                            _ => self.status.message = format!("unknown flag: {}", inputs[1]),
+                        }
+                    },
                     _ => self.status.message = format!("unknown command: {}", inputs[0]),
                 }
             },

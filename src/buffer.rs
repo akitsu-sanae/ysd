@@ -53,7 +53,7 @@ impl Buffer {
         }
     }
 
-    pub fn draw(&self, current_line: usize) {
+    pub fn draw(&self, current_line: usize, is_visible_linenumber: bool) {
         unsafe {
             let top_line = if current_line < getmaxy(stdscr) as usize / 2usize {
                 0
@@ -66,7 +66,7 @@ impl Buffer {
                 mv(i as i32, 0);
                 clrtoeol();
                 if i + top_line < self.lines.len() {
-                    syntax_highlighter::draw(i, self.lines[i + top_line].as_str());
+                    syntax_highlighter::draw(i, self.lines[i + top_line].as_str(), is_visible_linenumber);
                 }
             }
         }

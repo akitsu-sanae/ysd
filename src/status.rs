@@ -21,6 +21,7 @@ pub enum Mode {
 pub struct Status {
     pub mode: Mode,
     pub message: String,
+    pub visible_line_number: bool,
 }
 
 impl Status {
@@ -29,6 +30,7 @@ impl Status {
         Status {
             mode: Mode::Move,
             message: String::new(),
+            visible_line_number: false,
         }
     }
 
