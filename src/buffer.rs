@@ -53,13 +53,8 @@ impl Buffer {
     }
 
     pub fn draw(&self, current_line: usize, is_visible_linenumber: bool) {
-        let top_line = if current_line < terminal::height() / 2usize {
-            0
-        } else if current_line + terminal::height() / 2usize > self.lines.len() {
-            self.lines.len() - terminal::height()
-        } else {
-            current_line - terminal::height() / 2usize
-        };
+        use std::cmp;
+        let top_line = cmp::max(cmp::min(current_line as i32 - terminal::height() as i32 / 2, self.lines.len() as i32 - terminal::height() as i32), 0) as usize;
         for i in {0 .. terminal::height()} {
             terminal::move_to(0, i);
             terminal::clear_to_eol();
