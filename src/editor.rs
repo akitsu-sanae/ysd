@@ -5,12 +5,10 @@
   file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt)
 ============================================================================*/
 
-use ncurses::*;
 use buffer::Buffer;
 use cursor::{Cursor, Direction};
 use status::{Status, Mode};
-use display;
-use syntax_highlighter;
+use terminal;
 
 pub struct Editor {
     cursor: Cursor,
@@ -21,8 +19,7 @@ pub struct Editor {
 
 impl Editor {
     pub fn new() -> Self {
-        display::init();
-        syntax_highlighter::init();
+        terminal::init();
 
         Editor {
             cursor: Cursor::new(),
@@ -59,28 +56,25 @@ impl Editor {
     }
 
     fn update_move(&mut self) {
-        let ch = getch();
-        if ch == KEY_F1 {
-            self.is_quit = true;
-            return;
-        }
-        match ch as u8 as char {
-            'q' => self.is_quit = true,
-            'a' => self.status.mode = Mode::Edit,
-            'j' => self.cursor.go(Direction::Left, &self.buffers[0]),
-            'l' => self.cursor.go(Direction::Right, &self.buffers[0]),
-            'i' => self.cursor.go(Direction::Up, &self.buffers[0]),
-            'k' => self.cursor.go(Direction::Down, &self.buffers[0]),
-            ':' => self.status.mode = Mode::Command,
+        use terminal::Key;
+        match Key::read() {
+            Key::F1 | Key::Char('q') => self.is_quit = true,
+            Key::Char('a') => self.status.mode = Mode::Edit,
+            Key::Char('j') => self.cursor.go(Direction::Left, &self.buffers[0]),
+            Key::Char('l') => self.cursor.go(Direction::Right, &self.buffers[0]),
+            Key::Char('i') => self.cursor.go(Direction::Up, &self.buffers[0]),
+            Key::Char('k') => self.cursor.go(Direction::Down, &self.buffers[0]),
+            Key::Char(':') => self.status.mode = Mode::Command,
             _ => (),
+
         }
     }
 
     fn update_edit(&mut self) {
-        let ch = getch();
-        match ch {
-            27 => self.status.mode = Mode::Move,
-            127 | KEY_BACKSPACE => {
+        use terminal::Key;
+        match Key::read() {
+            Key::Escape => self.status.mode = Mode::Move,
+            Key::Delete | Key::Backspace => {
                 if self.cursor.x == 0 || self.buffers[0].lines[self.cursor.y] == "" { // erase newline character
                     let y = self.cursor.y;
                     let x = self.buffers[0].lines[y-1].len();
@@ -93,36 +87,34 @@ impl Editor {
                     self.buffers[0].erase(self.cursor.pos());
                 }
             },
-            10 => {
+            Key::Return => {
                 self.buffers[0].lines.insert(self.cursor.y + 1, "".to_string());
                 self.cursor.go(Direction::Down, &self.buffers[0]);
             },
-            _ => {
-                self.buffers[0].insert(self.cursor.pos(), ch as u8 as char);
+            Key::Char(ch) => {
+                self.buffers[0].insert(self.cursor.pos(), ch);
                 self.cursor.go(Direction::Right, &self.buffers[0]);
-            }
+            },
+            _ => (),
         }
     }
 
     fn get_command(&self) -> String {
         let mut result = String::new();
-        unsafe {
-            mv(getmaxy(stdscr) - 1, 14);
-        }
-        clrtoeol();
+        terminal::move_to(14, terminal::height() - 1);
+        terminal::clear_to_eol();
         loop {
-            let ch = getch();
-            if ch as u8 as char == '\n' {
-                break;
-            } if ch == KEY_BACKSPACE && !result.is_empty() {
-                result.pop().unwrap();
-            } else {
-                result.push(ch as u8 as char);
+            use terminal::Key;
+            match Key::read() {
+                Key::Return => break,
+                Key::Backspace if !result.is_empty() => {
+                    result.pop().unwrap();
+                },
+                Key::Char(ch) => result.push(ch),
+                _ => (),
             }
-            unsafe {
-                mvprintw(getmaxy(stdscr) - 1, 14, result.as_str());
-            }
-            clrtoeol();
+            terminal::print(14, terminal::height() - 1, &result);
+            terminal::clear_to_eol();
         }
         result
     }
@@ -153,7 +145,7 @@ impl Editor {
 
 impl Drop for Editor {
     fn drop(&mut self) {
-        endwin();
+        terminal::terminate();
     }
 }
 

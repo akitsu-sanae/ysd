@@ -10,18 +10,10 @@ use std::fs::File;
 use std::io::Read;
 use std::str::FromStr;
 use toml::{Parser, Value};
-use ncurses::*;
-use colors::Color;
-
-const COLOR_PAIR_KEYWORD: i16 = 10;
-const COLOR_PAIR_TYPE: i16 = 11;
-const COLOR_PAIR_NUMBER: i16 = 12;
-const COLOR_PAIR_STRING: i16 = 13;
-const COLOR_PAIR_CHAR: i16 = 14;
-const COLOR_PAIR_OPERATOR: i16 = 15;
+use terminal::{self, Color};
 
 #[derive(Debug, Clone)]
-struct HighlightColors {
+pub struct HighlightColors {
     pub keyword: Color,
     pub type_: Color,
     pub number: Color,
@@ -178,7 +170,7 @@ fn types() -> Vec<String> {
 fn operators() -> Vec<char> {
     HIGHLIGHT_PATTERN.lock().unwrap().operator.clone()
 }
-fn colors() -> HighlightColors {
+pub fn colors() -> HighlightColors {
     HIGHLIGHT_PATTERN.lock().unwrap().colors.clone()
 }
 
@@ -190,17 +182,6 @@ lazy_static! {
             println!("{}", msg);
             HighlightPattern::default()
         }));
-}
-
-pub fn init() {
-    let colors = colors();
-    start_color();
-    init_pair(COLOR_PAIR_KEYWORD, colors.keyword as i16, Color::Trans as i16);
-    init_pair(COLOR_PAIR_TYPE, colors.type_ as i16, Color::Trans as i16);
-    init_pair(COLOR_PAIR_NUMBER, colors.number as i16, Color::Trans as i16);
-    init_pair(COLOR_PAIR_STRING, colors.string as i16, Color::Trans as i16);
-    init_pair(COLOR_PAIR_CHAR, colors.char as i16, Color::Trans as i16);
-    init_pair(COLOR_PAIR_OPERATOR, colors.operator as i16, Color::Trans as i16);
 }
 
 fn is_identifier_char(c: &char) -> bool {
@@ -216,9 +197,9 @@ pub fn draw(y: usize, str: &str, visible_line_numbers: bool) {
     let mut is_in_identifier = false;
     let x = if visible_line_numbers {
         let linenum = format!("{0:<3}", y+1);
-        attron(COLOR_PAIR(COLOR_PAIR_STRING));
-        mvprintw(y as i32, 0, linenum.as_str());
-        attroff(COLOR_PAIR(COLOR_PAIR_STRING));
+        terminal::attribute(terminal::color_pair(terminal::ColorPair::SyntaxString), || {
+            terminal::print(0, y, &linenum);
+        });
         3
     } else {
         0
@@ -231,9 +212,9 @@ pub fn draw(y: usize, str: &str, visible_line_numbers: bool) {
                     word.push('"');
                 } else if is_in_string {
                     word.push(ch);
-                    attron(COLOR_PAIR(COLOR_PAIR_STRING));
-                    mvprintw(y as i32, (1 + i - word.len()) as i32, word.as_str());
-                    attroff(COLOR_PAIR(COLOR_PAIR_STRING));
+                    terminal::attribute(terminal::color_pair(terminal::ColorPair::SyntaxString), || {
+                        terminal::print(1 + i - word.len(), y, &word);
+                    });
                     word.clear();
                     is_in_string = false;
                 } else {
@@ -245,9 +226,9 @@ pub fn draw(y: usize, str: &str, visible_line_numbers: bool) {
                 let is_escaped = word.len() == 2 && word.as_bytes()[1] == '\\' as u8;
                 if is_in_char && !is_escaped {
                     word.push(ch);
-                    attron(COLOR_PAIR(COLOR_PAIR_CHAR));
-                    mvprintw(y as i32, (1 + i - word.len()) as i32, word.as_str());
-                    attroff(COLOR_PAIR(COLOR_PAIR_CHAR));
+                    terminal::attribute(terminal::color_pair(terminal::ColorPair::SyntaxChar), || {
+                        terminal::print(1 + i - word.len(), y, &word);
+                    });
                     word.clear();
                     is_in_char = false;
                 } else {
@@ -267,33 +248,33 @@ pub fn draw(y: usize, str: &str, visible_line_numbers: bool) {
                     word.push(ch);
                 } else {
                     if is_in_identifier && keywords().contains(&word){
-                        attron(COLOR_PAIR(COLOR_PAIR_KEYWORD));
-                        mvprintw(y as i32, (i - word.len()) as i32, word.as_str());
-                        attroff(COLOR_PAIR(COLOR_PAIR_KEYWORD));
+                        terminal::attribute(terminal::color_pair(terminal::ColorPair::SyntaxKeyword), || {
+                            terminal::print(i - word.len(), y, &word);
+                        });
                         is_in_identifier = false;
                     } else if is_in_identifier && types().contains(&word){
-                        attron(COLOR_PAIR(COLOR_PAIR_TYPE));
-                        mvprintw(y as i32, (i - word.len()) as i32, word.as_str());
-                        attroff(COLOR_PAIR(COLOR_PAIR_TYPE));
+                        terminal::attribute(terminal::color_pair(terminal::ColorPair::SyntaxType), || {
+                            terminal::print(i - word.len(), y, &word);
+                        });
                         is_in_identifier = false;
                     } else if is_in_identifier {
-                        mvprintw(y as i32, (i - word.len()) as i32, word.as_str());
+                        terminal::print(i - word.len(), y, &word);
                         is_in_identifier = false;
                     } else if is_in_number {
-                        attron(COLOR_PAIR(COLOR_PAIR_NUMBER));
-                        mvprintw(y as i32, (i - word.len()) as i32, word.as_str());
-                        attroff(COLOR_PAIR(COLOR_PAIR_NUMBER));
+                        terminal::attribute(terminal::color_pair(terminal::ColorPair::SyntaxNumber), || {
+                            terminal::print(i - word.len(), y, &word);
+                        });
                         is_in_number = false;
                     } else {
-                        mvprintw(y as i32, (i - word.len()) as i32, word.as_str());
+                        terminal::print(i - word.len(), y, &word);
                     }
 
                     if operators().contains(&ch) {
-                        attron(COLOR_PAIR(COLOR_PAIR_OPERATOR));
-                        mvprintw(y as i32, i as i32, ch.to_string().as_str());
-                        attroff(COLOR_PAIR(COLOR_PAIR_OPERATOR));
+                        terminal::attribute(terminal::color_pair(terminal::ColorPair::SyntaxOperator), || {
+                            terminal::print(i, y, &ch.to_string());
+                        });
                     } else {
-                        mvprintw(y as i32, i as i32, ch.to_string().as_str());
+                        terminal::print(i, y, &ch.to_string());
                     }
                     word.clear();
                 }

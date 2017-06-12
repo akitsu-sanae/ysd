@@ -5,11 +5,9 @@
   file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt)
 ============================================================================*/
 
-use ncurses::*;
 use cursor::Cursor;
-use colors::DEFAULT;
-use display;
-
+use terminal::ColorPair;
+use terminal;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum Mode {
@@ -35,6 +33,8 @@ impl Status {
     }
 
     pub fn draw(&self, cur: &Cursor) {
+
+        use terminal::Attribute;
         let mut str = String::new();
         match self.mode {
             Mode::Move => str += "Move",
@@ -43,20 +43,21 @@ impl Status {
         }
         str += format!("({}, {})", cur.x, cur.y).as_str();
 
-        let mode_color = display::mode_to_modecolor(self.mode).color();
-        attron(mode_color | A_BOLD());
-        unsafe {
-            mvprintw(getmaxy(stdscr)-1, 0, str.as_str());
-        }
-        attroff(mode_color | A_BOLD());
-        clrtoeol();
+        let mode_color = terminal::color_pair(terminal::mode_to_color_pair(&self.mode));
+        terminal::attribute(mode_color | Attribute::bold(), || {
+            terminal::print(0, terminal::height() - 1, &str);
+        });
+        terminal::clear_to_eol();
 
-        attron(DEFAULT | A_BOLD());
-        unsafe {
-            mvprintw(getmaxy(stdscr)-1, str.len() as i32 + 1, self.message.as_str());
-        }
-        attroff(DEFAULT | A_BOLD());
-        clrtoeol();
+        terminal::attribute(mode_color | Attribute::bold(), || {
+            terminal::print(0, terminal::height() - 1, &str)
+        });
+        terminal::clear_to_eol();
+
+        terminal::attribute(ColorPair::Default as u64 | Attribute::bold(), || {
+            terminal::print(str.len() + 1, terminal::height() - 1, &self.message)
+        });
+        terminal::clear_to_eol();
     }
 }
 

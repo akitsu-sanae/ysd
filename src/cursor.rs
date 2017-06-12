@@ -5,8 +5,8 @@
   file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt)
 ============================================================================*/
 
-use ncurses::*;
 use buffer::Buffer;
+use terminal;
 
 pub struct Cursor {
     pub x: usize,
@@ -23,7 +23,7 @@ pub enum Direction {
 impl Cursor {
     pub fn new() -> Self {
         Cursor {
-            x: 0, // from 0 to getmaxx(stdscr) - 1
+            x: 0, // from 0 to terminal::width() - 1
             y: 0, // from 0 to buffer.lines.len() - 1
         }
     }
@@ -36,10 +36,8 @@ impl Cursor {
                 }
             },
             Direction::Right => {
-                unsafe {
-                    if self.x+1 < getmaxx(stdscr) as usize {
-                        self.x += 1;
-                    }
+                if self.x+1 < terminal::width() {
+                    self.x += 1;
                 }
             },
             Direction::Up => {
@@ -56,20 +54,18 @@ impl Cursor {
     }
 
     pub fn draw(&self, buf: &Buffer) {
-        unsafe {
-            let top_line = if self.y < getmaxy(stdscr) as usize / 2usize {
-                0
-            } else if self.y + getmaxy(stdscr) as usize / 2usize > buf.lines.len() {
-                buf.lines.len() - getmaxy(stdscr) as usize
-            } else {
-                self.y - getmaxy(stdscr) as usize / 2usize
-            } as i32;
+        let top_line = if self.y < terminal::height() / 2usize {
+            0
+        } else if self.y + terminal::height() / 2usize > buf.lines.len() {
+            buf.lines.len() - terminal::height()
+        } else {
+            self.y - terminal::height() / 2usize
+        };
 
-            if buf.is_valid_pos((self.x, self.y)) {
-                mv(self.y as i32 - top_line, self.x as i32);
-            } else {
-                mv(self.y as i32 - top_line, buf.line(self.y).len() as i32);
-            }
+        if buf.is_valid_pos((self.x, self.y)) {
+            terminal::move_to(self.x, self.y - top_line);
+        } else {
+            terminal::move_to(buf.line(self.y).len(), self.y - top_line);
         }
     }
 

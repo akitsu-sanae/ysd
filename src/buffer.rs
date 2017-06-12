@@ -8,8 +8,7 @@
 use std::io::Read;
 use std::io::Write;
 use std::fs::File;
-
-use ncurses::*;
+use terminal;
 use syntax_highlighter;
 
 pub struct Buffer {
@@ -54,20 +53,18 @@ impl Buffer {
     }
 
     pub fn draw(&self, current_line: usize, is_visible_linenumber: bool) {
-        unsafe {
-            let top_line = if current_line < getmaxy(stdscr) as usize / 2usize {
-                0
-            } else if current_line + getmaxy(stdscr) as usize / 2usize > self.lines.len() {
-                self.lines.len() - getmaxy(stdscr) as usize
-            } else {
-                current_line - getmaxy(stdscr) as usize / 2usize
-            };
-            for i in {0 .. getmaxy(stdscr) as usize} {
-                mv(i as i32, 0);
-                clrtoeol();
-                if i + top_line < self.lines.len() {
-                    syntax_highlighter::draw(i, self.lines[i + top_line].as_str(), is_visible_linenumber);
-                }
+        let top_line = if current_line < terminal::height() / 2usize {
+            0
+        } else if current_line + terminal::height() / 2usize > self.lines.len() {
+            self.lines.len() - terminal::height()
+        } else {
+            current_line - terminal::height() / 2usize
+        };
+        for i in {0 .. terminal::height()} {
+            terminal::move_to(0, i);
+            terminal::clear_to_eol();
+            if i + top_line < self.lines.len() {
+                syntax_highlighter::draw(i, self.lines[i + top_line].as_str(), is_visible_linenumber);
             }
         }
     }
@@ -86,14 +83,12 @@ impl Buffer {
     }
 
     pub fn save(&self, filename: &str) {
-        let current_pos = unsafe {
-            (getcurx(stdscr), getcury(stdscr))
-        };
+        let current_pos = terminal::cursor_pos();
 
         File::create(filename.clone()).and_then(|mut f|{
             f.write(self.lines.join("\n").as_bytes())
         }).expect("can not create file");
-        mv(current_pos.1, current_pos.0);
+        terminal::move_to(current_pos.0, current_pos.1);
     }
 }
 
