@@ -17,17 +17,17 @@ pub enum Color {
     Trans = -1,
 
     // pre defined colors
+    Black = COLOR_BLACK as isize,
     Red = COLOR_RED as isize,
     Green = COLOR_GREEN as isize,
-    Blue = COLOR_BLUE as isize,
     Yellow = COLOR_YELLOW as isize,
+    Blue = COLOR_BLUE as isize,
     Magenta = COLOR_MAGENTA as isize,
     Cyan = COLOR_CYAN as isize,
-    Black = COLOR_BLACK as isize,
     White = COLOR_WHITE as isize,
 
     // custom colors
-    Gray = 16, DarkRed, DarkGreen, DarkBlue, DarkYellow, DarkMagenta, DarkCyan, DarkGray,
+    Gray = 8, DarkRed, DarkGreen, DarkBlue, DarkYellow, DarkMagenta, DarkCyan, DarkGray,
 }
 
 impl FromStr for Color {
