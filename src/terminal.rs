@@ -12,7 +12,7 @@ use status::Mode;
 use syntax_highlighter;
 
 // red, green, blue, yellow, magenta, cyan, black, white were pre defined
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Color {
     Trans = -1,
 
@@ -71,6 +71,7 @@ pub enum ColorPair {
     SyntaxString,
     SyntaxChar,
     SyntaxOperator,
+    SyntaxComment,
 }
 
 use std::ops::BitOr;
@@ -127,13 +128,14 @@ fn init_colors() {
     init_pair(ModeEdit as i16, Color::White as i16, EDIT_COLOR as i16);
     init_pair(ModeCommand as i16, Color::White as i16, COMMAND_COLOR as i16);
 
-    let colors = syntax_highlighter::colors();
-    init_pair(SyntaxKeyword as i16, colors.keyword as i16, Color::Trans as i16);
-    init_pair(SyntaxType as i16, colors.type_ as i16, Color::Trans as i16);
-    init_pair(SyntaxNumber as i16, colors.number as i16, Color::Trans as i16);
-    init_pair(SyntaxString as i16, colors.string as i16, Color::Trans as i16);
-    init_pair(SyntaxChar as i16, colors.char as i16, Color::Trans as i16);
-    init_pair(SyntaxOperator as i16, colors.operator as i16, Color::Trans as i16);
+    let colors = syntax_highlighter::data();
+    init_pair(SyntaxKeyword as i16, colors.keyword.color as i16, Color::Trans as i16);
+    init_pair(SyntaxType as i16, colors.type_.color as i16, Color::Trans as i16);
+    init_pair(SyntaxNumber as i16, colors.number.color as i16, Color::Trans as i16);
+    init_pair(SyntaxString as i16, colors.string.color as i16, Color::Trans as i16);
+    init_pair(SyntaxChar as i16, colors.char.color as i16, Color::Trans as i16);
+    init_pair(SyntaxOperator as i16, colors.operator.color as i16, Color::Trans as i16);
+    init_pair(SyntaxComment as i16, colors.comment.color as i16, Color::Trans as i16);
 
     bkgd(' ' as chtype | COLOR_PAIR(Default as i16) as chtype);
 }

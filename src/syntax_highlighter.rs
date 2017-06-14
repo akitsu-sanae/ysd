@@ -10,275 +10,331 @@ use std::fs::File;
 use std::io::Read;
 use std::str::FromStr;
 use toml::{Parser, Value};
+use regex::Regex;
 use terminal::{self, Color};
 
-#[derive(Debug, Clone)]
-pub struct HighlightColors {
-    pub keyword: Color,
-    pub type_: Color,
-    pub number: Color,
-    pub string: Color,
-    pub char: Color,
-    pub operator: Color,
+#[derive(Debug)]
+pub enum LoadError {
+    OpenFile,
+    Parsing(Vec<(usize, usize, usize, usize)>),
+    InvalidFile,
+    Keyword,
+    KeywordColor,
+    KeywordPatterns,
+    Type,
+    TypeColor,
+    TypePatterns,
+    Operator,
+    OperatorColor,
+    OperatorPattern,
+    Comment,
+    CommentColor,
+    CommentPattern,
+    Number,
+    NumberColor,
+    String,
+    StringColor,
+    Char,
+    CharColor,
+}
+
+
+#[derive(Debug)]
+pub struct HighlightInfo {
+    pub color: Color,
+    pub patterns: Vec<String>,
+}
+
+impl HighlightInfo {
+    fn default() -> Self {
+        HighlightInfo {
+            color: Color::White,
+            patterns: vec![],
+        }
+    }
 }
 
 #[derive(Debug)]
-struct HighlightPattern {
-    pub keyword: Vec<String>,
-    pub type_: Vec<String>,
-    pub operator: Vec<char>,
-    pub colors: HighlightColors,
+pub struct HighlightData {
+    pub keyword: HighlightInfo,
+    pub type_: HighlightInfo,
+    pub operator: HighlightInfo,
+    pub comment: HighlightInfo,
+    pub number: HighlightInfo,
+    pub string: HighlightInfo,
+    pub char: HighlightInfo,
 }
 
-fn load(filename: &str) -> Result<Value, String> {
-    let mut data = String::new();
-    File::open(filename).and_then(|mut f| {
-        f.read_to_string(&mut data)
-    }).map_err(|_| format!("can not find: {}", filename))?;
-    let mut parser = Parser::new(&data);
-    match parser.parse() {
-        Some(toml) => Ok(Value::Table(toml)),
+impl HighlightData {
+    fn default() -> Self {
+        HighlightData {
+            keyword: HighlightInfo::default(),
+            type_: HighlightInfo::default(),
+            operator: HighlightInfo::default(),
+            comment: HighlightInfo::default(),
+            number: HighlightInfo::default(),
+            string: HighlightInfo::default(),
+            char: HighlightInfo::default(),
+        }
+    }
+
+    pub fn new() -> Result<Self, LoadError> {
+        let mut input = String::new();
+        let filename = format!("{}/.config/ysd.conf", env::var("HOME").unwrap());
+        File::open(&filename).and_then(|mut f| {
+            f.read_to_string(&mut input)
+        }).map_err(|_| LoadError::OpenFile)?;
+
+        let mut parser = Parser::new(&input);
+        match parser.parse() {
             None => {
-                let mut msg = "".to_string();
-                for err in &parser.errors {
+                let data = parser.errors.iter().map(|err| {
                     let (low_line, low_col) = parser.to_linecol(err.lo);
                     let (hi_line, hi_col) = parser.to_linecol(err.hi);
-                    msg += format!("fail parsing {} at {}:{}-{}:{} : {}",
-                                   filename,
-                                   low_line, low_col, hi_line, hi_col, err.desc).as_str();
-                }
-                Err(msg)
+                    (low_line, low_col, hi_line, hi_col)
+                }).collect();
+                Err(LoadError::Parsing(data))
             },
+            Some(toml) => HighlightData::from_toml(Value::Table(toml))
+        }
     }
-}
 
-impl HighlightColors {
-    fn new() -> Result<Self, String> {
-        let toml = load(format!("{}/.ysd.hi", env::var("HOME").unwrap()).as_str())?;
+    fn from_toml(toml: Value) -> Result<Self, LoadError> {
         let toml = toml
-            .as_table().ok_or("invalid highlight file".to_string())?;
+            .as_table().ok_or(LoadError::InvalidFile)?;
 
-        let keyword_color = toml
-            .get("keyword").ok_or("can not find keyword color".to_string())?
-            .as_str().ok_or("keyword color must be string".to_string())?;
-        let keyword_color = Color::from_str(keyword_color)?;
+        let keyword = toml
+            .get("keyword").ok_or(LoadError::Keyword)?
+            .as_table().ok_or(LoadError::Keyword)?;
+        let keyword_color = keyword
+            .get("color").ok_or(LoadError::KeywordColor)?
+            .as_str().ok_or(LoadError::KeywordColor)?
+            .to_string();
+        let keyword_color = Color::from_str(&keyword_color)
+            .map_err(|_| LoadError::KeywordColor)?;
+        let keyword_patterns = keyword
+            .get("patterns").ok_or(LoadError::KeywordPatterns)?
+            .as_slice().ok_or(LoadError::KeywordPatterns)?
+            .into_iter()
+                .map(|e| e.as_str().map(str::to_string).ok_or(LoadError::KeywordPatterns))
+            .collect::<Result<Vec<_>, _>>()?;
 
-        let type_color = toml
-            .get("type").ok_or("can not find type color".to_string())?
-            .as_str().ok_or("type color must be string".to_string())?;
-        let type_color = Color::from_str(type_color)?;
+        let type_ = toml
+            .get("type").ok_or(LoadError::Type)?
+            .as_table().ok_or(LoadError::Type)?;
+        let type_color = type_
+            .get("color").ok_or(LoadError::TypeColor)?
+            .as_str().ok_or(LoadError::TypeColor)?
+            .to_string();
+        let type_color = Color::from_str(&type_color)
+            .map_err(|_| LoadError::TypeColor)?;
+        let type_patterns = type_
+            .get("patterns").ok_or(LoadError::TypePatterns)?
+            .as_slice().ok_or(LoadError::TypePatterns)?
+            .into_iter()
+                .map(|e| e.as_str().map(str::to_string).ok_or(LoadError::TypePatterns))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let operator = toml
+            .get("operator").ok_or(LoadError::Operator)?
+            .as_table().ok_or(LoadError::Operator)?;
+        let operator_color = operator
+            .get("color").ok_or(LoadError::OperatorColor)?
+            .as_str().ok_or(LoadError::OperatorColor)?
+            .to_string();
+        let operator_color = Color::from_str(&operator_color)
+            .map_err(|_| LoadError::OperatorColor)?;
+        let operator_patterns = operator
+            .get("patterns").ok_or(LoadError::OperatorPattern)?
+            .as_slice().ok_or(LoadError::OperatorPattern)?
+            .into_iter()
+                .map(|e| e.as_str().map(str::to_string).ok_or(LoadError::OperatorPattern))
+                .collect::<Result<Vec<_>, _>>()?;
+
+        let comment = toml
+            .get("comment").ok_or(LoadError::Comment)?
+            .as_table().ok_or(LoadError::Comment)?;
+        let comment_color = comment
+            .get("color").ok_or(LoadError::CommentColor)?
+            .as_str().ok_or(LoadError::CommentColor)?
+            .to_string();
+        let comment_color = Color::from_str(&comment_color)
+            .map_err(|_| LoadError::CommentColor)?;
+        let comment_pattern = comment
+            .get("patterns").ok_or(LoadError::CommentPattern)?
+            .as_slice().ok_or(LoadError::CommentPattern)?
+            .into_iter()
+                .map(|e| e.as_str().map(str::to_string).ok_or(LoadError::CommentPattern))
+            .collect::<Result<Vec<_>, _>>()?;
 
         let number_color = toml
-            .get("number").ok_or("can not find number color".to_string())?
-            .as_str().ok_or("number color must be string".to_string())?;
-        let number_color = Color::from_str(number_color)?;
+            .get("number").ok_or(LoadError::Number)?
+            .as_table().ok_or(LoadError::Number)?
+            .get("color").ok_or(LoadError::NumberColor)?
+            .as_str().ok_or(LoadError::NumberColor)?
+            .to_string();
+        let number_color = Color::from_str(&number_color)
+            .map_err(|_| LoadError::NumberColor)?;
 
         let string_color = toml
-            .get("string").ok_or("can not find string color".to_string())?
-            .as_str().ok_or("string color must be string".to_string())?;
-        let string_color = Color::from_str(string_color)?;
+            .get("string").ok_or(LoadError::String)?
+            .as_table().ok_or(LoadError::String)?
+            .get("color").ok_or(LoadError::StringColor)?
+            .as_str().ok_or(LoadError::StringColor)?
+            .to_string();
+        let string_color = Color::from_str(&string_color)
+            .map_err(|_| LoadError::StringColor)?;
 
         let char_color = toml
-            .get("char").ok_or("can not find char color".to_string())?
-            .as_str().ok_or("char color must be string".to_string())?;
-        let char_color = Color::from_str(char_color)?;
+            .get("char").ok_or(LoadError::Char)?
+            .as_table().ok_or(LoadError::Char)?
+            .get("color").ok_or(LoadError::CharColor)?
+            .as_str().ok_or(LoadError::CharColor)?
+            .to_string();
+        let char_color = Color::from_str(&char_color)
+            .map_err(|_| LoadError::CharColor)?;
 
-        let operator_color = toml
-            .get("operator").ok_or("can not find operator color".to_string())?
-            .as_str().ok_or("operator color must be string".to_string())?;
-        let operator_color = Color::from_str(operator_color)?;
-        Ok(HighlightColors {
-            keyword: keyword_color,
-            type_: type_color,
-            number: number_color,
-            string: string_color,
-            char: char_color,
-            operator: operator_color,
+        Ok(HighlightData {
+            keyword: HighlightInfo {
+                color: keyword_color,
+                patterns: keyword_patterns,
+            },
+            type_: HighlightInfo {
+                color: type_color,
+                patterns: type_patterns,
+            },
+            operator: HighlightInfo {
+                color: operator_color,
+                patterns: operator_patterns,
+            },
+            comment: HighlightInfo {
+                color: comment_color,
+                patterns: comment_pattern,
+            },
+            number: HighlightInfo {
+                color: number_color,
+                patterns: vec![r"\d+".to_string()],
+            },
+            string: HighlightInfo {
+                color: string_color,
+                patterns: vec![r#""[^"]*""#.to_string()],
+            },
+            char: HighlightInfo {
+                color: char_color,
+                patterns: vec![r#"'[^']*'"#.to_string()],
+            },
         })
     }
-
-    fn default() -> Self {
-        HighlightColors {
-            keyword: Color::White,
-            type_: Color::White,
-            number: Color::White,
-            string: Color::White,
-            char: Color::White,
-            operator: Color::White,
-        }
-    }
 }
 
-impl HighlightPattern {
-    pub fn new() -> Result<Self, String> {
-
-        let toml = load(format!("{}/.ysd.syntax", env::var("HOME").unwrap()).as_str())?;
-        let toml = toml
-            .as_table().ok_or("invalid highlight file".to_string())?;
-
-        let keywords = toml
-            .get("keyword").ok_or("can not find keyword".to_string())?
-            .as_slice().ok_or("keyword must be array".to_string())?
-            .into_iter()
-               .map(|e| e.as_str().map(str::to_string).ok_or("keyword must be string".to_string()))
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let types = toml
-            .get("type").ok_or("can not find type".to_string())?
-            .as_slice().ok_or("type must be array".to_string())?
-            .into_iter()
-               .map(|e| e.as_str().map(str::to_string).ok_or("keyword must be string".to_string()))
-            .collect::<Result<Vec<_>, _>>()?;
-
-       let operators = toml
-            .get("operator").ok_or("can not find operator".to_string())?
-            .as_slice().ok_or("operator must be array".to_string())?
-            .into_iter()
-               .map(|e| e.as_str().map(|e| e.as_bytes()[0] as char).ok_or("element of operator must be string".to_string()))
-            .collect::<Result<Vec<_>, _>>()?;
-
-       let highlight_colors = HighlightColors::new().unwrap_or_else(|msg| {
-           println!("{}", msg);
-           HighlightColors::default()
-       });
-
-       Ok(HighlightPattern {
-           keyword: keywords,
-           type_: types,
-           operator: operators,
-           colors: highlight_colors,
-        })
-    }
-
-    fn default() -> Self {
-        HighlightPattern {
-            keyword: vec![],
-            type_: vec![],
-            operator: vec![],
-            colors: HighlightColors::default()
-        }
-    }
+pub fn data() -> &'static HighlightData {
+    &HIGHLIGHT_DATA
 }
 
-fn keywords() -> Vec<String> {
-    HIGHLIGHT_PATTERN.lock().unwrap().keyword.clone()
-}
-
-fn types() -> Vec<String> {
-    HIGHLIGHT_PATTERN.lock().unwrap().type_.clone()
-}
-fn operators() -> Vec<char> {
-    HIGHLIGHT_PATTERN.lock().unwrap().operator.clone()
-}
-pub fn colors() -> HighlightColors {
-    HIGHLIGHT_PATTERN.lock().unwrap().colors.clone()
-}
-
-
-use std::sync::Mutex;
 lazy_static! {
-    static ref HIGHLIGHT_PATTERN: Mutex<HighlightPattern> =
-        Mutex::new(HighlightPattern::new().unwrap_or_else(|msg| {
-            println!("{}", msg);
-            HighlightPattern::default()
-        }));
-}
-
-fn is_identifier_char(c: &char) -> bool {
-    c.is_digit(10) || c.is_alphabetic() || c.clone() == '_'
-}
-
-pub fn draw(y: usize, str: &str, visible_line_numbers: bool) {
-
-    let mut word = String::new();
-    let mut is_in_string = false;
-    let mut is_in_char = false;
-    let mut is_in_number = false;
-    let mut is_in_identifier = false;
-    let x = if visible_line_numbers {
-        let linenum = format!("{0:<3}", y+1);
-        terminal::attribute(terminal::color_pair(terminal::ColorPair::SyntaxString), || {
-            terminal::print(0, y, &linenum);
+    static ref HIGHLIGHT_DATA: HighlightData =
+        HighlightData::new().unwrap_or_else(|err| {
+            use std::io::{stderr, Write};
+            writeln!(&mut stderr(), "{:?}", err).unwrap();
+            HighlightData::default()
         });
-        3
-    } else {
-        0
-    };
-    for (i, ch) in format!("{} ", str).as_str().char_indices() {
-        let i = i + x;
-        match ch {
-            '"' => {
-                if is_in_char {
-                    word.push('"');
-                } else if is_in_string {
-                    word.push(ch);
-                    terminal::attribute(terminal::color_pair(terminal::ColorPair::SyntaxString), || {
-                        terminal::print(1 + i - word.len(), y, &word);
-                    });
-                    word.clear();
-                    is_in_string = false;
-                } else {
-                    word.push(ch);
-                    is_in_string = true;
-                }
-            },
-            '\'' => {
-                let is_escaped = word.len() == 2 && word.as_bytes()[1] == '\\' as u8;
-                if is_in_char && !is_escaped {
-                    word.push(ch);
-                    terminal::attribute(terminal::color_pair(terminal::ColorPair::SyntaxChar), || {
-                        terminal::print(1 + i - word.len(), y, &word);
-                    });
-                    word.clear();
-                    is_in_char = false;
-                } else {
-                    word.push(ch);
-                    is_in_char = true;
-                }
-            },
-            _ => {
-                if is_in_string || is_in_char {
-                    word.push(ch);
-                } else if is_identifier_char(&ch) {
-                    if ch.is_digit(10) && !is_in_identifier {
-                        is_in_number = true;
-                    } else {
-                        is_in_identifier = true;
-                    }
-                    word.push(ch);
-                } else {
-                    if is_in_identifier && keywords().contains(&word){
-                        terminal::attribute(terminal::color_pair(terminal::ColorPair::SyntaxKeyword), || {
-                            terminal::print(i - word.len(), y, &word);
-                        });
-                        is_in_identifier = false;
-                    } else if is_in_identifier && types().contains(&word){
-                        terminal::attribute(terminal::color_pair(terminal::ColorPair::SyntaxType), || {
-                            terminal::print(i - word.len(), y, &word);
-                        });
-                        is_in_identifier = false;
-                    } else if is_in_identifier {
-                        terminal::print(i - word.len(), y, &word);
-                        is_in_identifier = false;
-                    } else if is_in_number {
-                        terminal::attribute(terminal::color_pair(terminal::ColorPair::SyntaxNumber), || {
-                            terminal::print(i - word.len(), y, &word);
-                        });
-                        is_in_number = false;
-                    } else {
-                        terminal::print(i - word.len(), y, &word);
-                    }
+}
 
-                    if operators().contains(&ch) {
-                        terminal::attribute(terminal::color_pair(terminal::ColorPair::SyntaxOperator), || {
-                            terminal::print(i, y, &ch.to_string());
-                        });
-                    } else {
-                        terminal::print(i, y, &ch.to_string());
-                    }
-                    word.clear();
-                }
+pub fn draw(x: usize, y: usize, lines: &[String]) {
+    let text = &lines.iter()
+        .map(|line| format!("{:1$}", line, terminal::width() - 1))
+        .map(|line| {
+            if line.len() < terminal::width() {
+                line
+            } else {
+                line[0 .. terminal::width() - 1].to_string()
             }
+        })
+        .fold("".to_string(), |acc, line| format!("{}\n{}", acc, line));
+    terminal::print(x, y, text);
+
+    let data = data();
+    for expr in data.type_.patterns.iter() {
+        let regex = Regex::new(expr).unwrap();
+        for (start, end) in regex.find_iter(text) {
+            let y = start / terminal::width();
+            let x = start % terminal::width() - 1;
+            let color = terminal::ColorPair::SyntaxType;
+            terminal::attribute(terminal::color_pair(color), || {
+                terminal::print(x, y, &text[start .. end]);
+            });
+        }
+    }
+
+    for expr in data.keyword.patterns.iter() {
+        let regex = Regex::new(expr).unwrap();
+        for (start, end) in regex.find_iter(text) {
+            let y = start / terminal::width();
+            let x = start % terminal::width() - 1;
+            let keyword_color = terminal::ColorPair::SyntaxKeyword;
+            terminal::attribute(terminal::color_pair(keyword_color), || {
+                terminal::print(x, y, &text[start .. end]);
+            });
+        }
+    }
+
+    for expr in data.operator.patterns.iter() {
+        let regex = Regex::new(expr).unwrap();
+        for (start, end) in regex.find_iter(text) {
+            let y = start / terminal::width();
+            let x = start % terminal::width() - 1;
+            let color = terminal::ColorPair::SyntaxOperator;
+            terminal::attribute(terminal::color_pair(color), || {
+                terminal::print(x, y, &text[start .. end]);
+            });
+        }
+    }
+
+    for expr in data.number.patterns.iter() {
+        let regex = Regex::new(expr).unwrap();
+        for (start, end) in regex.find_iter(text) {
+            let y = start / terminal::width();
+            let x = start % terminal::width() - 1;
+            let color = terminal::ColorPair::SyntaxNumber;
+            terminal::attribute(terminal::color_pair(color), || {
+                terminal::print(x, y, &text[start .. end]);
+            });
+        }
+    }
+
+    for expr in data.string.patterns.iter() {
+        let regex = Regex::new(expr).unwrap();
+        for (start, end) in regex.find_iter(text) {
+            let y = start / terminal::width();
+            let x = start % terminal::width() - 1;
+            let color = terminal::ColorPair::SyntaxString;
+            terminal::attribute(terminal::color_pair(color), || {
+                terminal::print(x, y, &text[start .. end]);
+            });
+        }
+    }
+
+    for expr in data.char.patterns.iter() {
+        let regex = Regex::new(expr).unwrap();
+        for (start, end) in regex.find_iter(text) {
+            let y = start / terminal::width();
+            let x = start % terminal::width() - 1;
+            let color = terminal::ColorPair::SyntaxChar;
+            terminal::attribute(terminal::color_pair(color), || {
+                terminal::print(x, y, &text[start .. end]);
+            });
+        }
+    }
+
+    for expr in data.comment.patterns.iter() {
+        let regex = Regex::new(expr).unwrap();
+        for (start, end) in regex.find_iter(text) {
+            let y = start / terminal::width();
+            let x = start % terminal::width() - 1;
+            let color = terminal::ColorPair::SyntaxComment;
+            terminal::attribute(terminal::color_pair(color), || {
+                terminal::print(x, y, &text[start .. end]);
+            });
         }
     }
 }
