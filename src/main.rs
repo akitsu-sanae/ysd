@@ -6,8 +6,6 @@
 ============================================================================*/
 
 extern crate toml;
-#[macro_use]
-extern crate lazy_static;
 extern crate ncurses;
 extern crate regex;
 
@@ -17,21 +15,17 @@ mod buffer;
 mod cursor;
 mod editor;
 mod status;
+mod config;
 mod terminal;
-mod syntax_highlighter;
 use editor::Editor;
-use buffer::Buffer;
 
 fn main() {
-
-    let mut editor = Editor::new();
-
     let args: Vec<_> = env::args().collect();
     if args.len() != 2 {
         panic!("error: filename was not given.");
     }
 
-    editor.add_buffer(Buffer::from_file(args[1].as_str()));
+    let mut editor = Editor::new(&args[1]);
     editor.draw();
 
     loop {

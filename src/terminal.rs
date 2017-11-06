@@ -8,26 +8,13 @@
 use std::str::FromStr;
 
 use ncurses::*;
-use status::Mode;
-use syntax_highlighter;
 
 // red, green, blue, yellow, magenta, cyan, black, white were pre defined
 #[derive(Debug, Clone, Copy)]
 pub enum Color {
     Trans = -1,
-
-    // pre defined colors
-    Black = COLOR_BLACK as isize,
-    Red = COLOR_RED as isize,
-    Green = COLOR_GREEN as isize,
-    Yellow = COLOR_YELLOW as isize,
-    Blue = COLOR_BLUE as isize,
-    Magenta = COLOR_MAGENTA as isize,
-    Cyan = COLOR_CYAN as isize,
-    White = COLOR_WHITE as isize,
-
-    // custom colors
-    Gray = 8, DarkRed, DarkGreen, DarkBlue, DarkYellow, DarkMagenta, DarkCyan, DarkGray,
+    Black, Red, Green, Blue, Yellow, Magenta, Cyan, White,
+    Gray, DarkRed, DarkGreen, DarkBlue, DarkYellow, DarkMagenta, DarkCyan, DarkGray,
 }
 
 impl FromStr for Color {
@@ -57,9 +44,9 @@ impl FromStr for Color {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ColorPair {
-    Default = 1,
+    Normal = 1,
 
     ModeMove = 5,
     ModeEdit,
@@ -74,60 +61,48 @@ pub enum ColorPair {
     SyntaxComment,
 }
 
-use std::ops::BitOr;
-impl BitOr<u64> for ColorPair {
-    type Output = u64;
-    fn bitor(self, rhs: u64) -> u64 {
-        self as u64 | rhs
-    }
-}
-
-
 const MOVE_COLOR: Color = Color::Blue;
 const EDIT_COLOR: Color = Color::Green;
 const COMMAND_COLOR: Color = Color::Magenta;
 
-pub fn mode_to_color_pair(mode: &Mode) -> ColorPair {
-    match *mode {
-        Mode::Move => ColorPair::ModeMove,
-        Mode::Edit => ColorPair::ModeEdit,
-        Mode::Command => ColorPair::ModeCommand,
-    }
-}
-
-
 pub fn init() {
-    unsafe {
-        initscr();
-        raw();
-        keypad(stdscr, true);
-        scrollok(stdscr, true);
-        noecho();
+    initscr();
+    raw();
+    keypad(stdscr(), true);
+    scrollok(stdscr(), true);
+    noecho();
 
-        init_colors();
-    }
+    init_colors();
 }
 
 fn init_colors() {
     use_default_colors();
     start_color();
-    init_color(Color::Gray as i16, 160, 160, 160);
-    init_color(Color::DarkRed as i16, 160, 0, 0);
-    init_color(Color::DarkGreen as i16, 0, 160, 0);
-    init_color(Color::DarkBlue as i16, 0, 0, 160);
-    init_color(Color::DarkYellow as i16, 160, 160, 0);
-    init_color(Color::DarkMagenta as i16, 160, 0, 160);
-    init_color(Color::DarkCyan as i16, 0, 160, 160);
-    init_color(Color::DarkGray as i16, 80, 80, 80);
+    const MAX : i16 = 1000;
+    init_color(Color::Black as i16, 0, 0, 0);
+    init_color(Color::Red as i16, MAX, 0, 0);
+    init_color(Color::Green as i16, 0, MAX, 0);
+    init_color(Color::Blue as i16, 0, 0, MAX);
+    init_color(Color::Yellow as i16, MAX, MAX, 0);
+    init_color(Color::Magenta as i16, MAX, 0, MAX);
+    init_color(Color::Cyan as i16, 0, MAX, MAX);
+    init_color(Color::White as i16, MAX, MAX, MAX);
+    init_color(Color::Gray as i16, 2*MAX/3, 2*MAX/3, 2*MAX/3);
+    init_color(Color::DarkRed as i16, MAX/2, 0, 0);
+    init_color(Color::DarkGreen as i16, 0, MAX/2, 0);
+    init_color(Color::DarkBlue as i16, 0, 0, MAX/2);
+    init_color(Color::DarkYellow as i16, MAX/2, MAX/2, 0);
+    init_color(Color::DarkMagenta as i16, MAX/2, 0, MAX/2);
+    init_color(Color::DarkCyan as i16, 0, MAX/2, MAX/2);
+    init_color(Color::DarkGray as i16, MAX/3, MAX/3, MAX/3);
 
-    use self::ColorPair::*;
+    init_pair(ColorPair::Normal as i16, Color::White as i16, Color::Trans as i16);
 
-    init_pair(Default as i16, Color::White as i16, Color::Trans as i16);
+    init_pair(ColorPair::ModeMove as i16, Color::White as i16, MOVE_COLOR as i16);
+    init_pair(ColorPair::ModeEdit as i16, Color::White as i16, EDIT_COLOR as i16);
+    init_pair(ColorPair::ModeCommand as i16, Color::White as i16, COMMAND_COLOR as i16);
 
-    init_pair(ModeMove as i16, Color::White as i16, MOVE_COLOR as i16);
-    init_pair(ModeEdit as i16, Color::White as i16, EDIT_COLOR as i16);
-    init_pair(ModeCommand as i16, Color::White as i16, COMMAND_COLOR as i16);
-
+    /*
     let colors = syntax_highlighter::data();
     init_pair(SyntaxKeyword as i16, colors.keyword.color as i16, Color::Trans as i16);
     init_pair(SyntaxType as i16, colors.type_.color as i16, Color::Trans as i16);
@@ -136,24 +111,79 @@ fn init_colors() {
     init_pair(SyntaxChar as i16, colors.char.color as i16, Color::Trans as i16);
     init_pair(SyntaxOperator as i16, colors.operator.color as i16, Color::Trans as i16);
     init_pair(SyntaxComment as i16, colors.comment.color as i16, Color::Trans as i16);
+    */
 
-    bkgd(' ' as chtype | COLOR_PAIR(Default as i16) as chtype);
+    bkgd(' ' as chtype | color_pair(ColorPair::Normal) as chtype);
 }
 
-pub fn terminate() {
-    endwin();
-}
-
-pub fn color_pair(color: ColorPair) -> u64 {
+fn color_pair(color: ColorPair) -> u64 {
     COLOR_PAIR(color as i16)
 }
 
-pub fn clear_to_eol() {
-    clrtoeol();
+pub fn terminate() {
+    use_default_colors();
+    endwin();
 }
 
-pub fn print(x: usize, y: usize, str: &str) {
-    mvprintw(y as i32, x as i32, str);
+
+pub struct Frame {
+    pub pos: (usize, usize),
+    pub lines: Vec<String>,
+    pub color: ColorPair,
+    pub attrs: Vec<Attribute>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Attribute {
+    Bold
+}
+
+impl Attribute {
+    fn to_u64(&self) -> u64 {
+        match *self {
+            Attribute::Bold => A_BOLD(),
+        }
+    }
+}
+
+pub fn draw(frames: Vec<Frame>) {
+    erase();
+    for frame in frames {
+        let mode = frame.attrs.iter().fold(
+            color_pair(frame.color),
+            |acc, attr| {acc | attr.to_u64()});
+        attron(mode);
+        for (i, line) in frame.lines.iter().enumerate() {
+            mvprintw(i as i32 +frame.pos.1 as i32, frame.pos.0 as i32, &line);
+        }
+        /*
+        let text = frame.lines.iter().fold(String::new(), |acc, line| {
+            format!("{}\n{}", acc, line)
+        });
+        mvprintw(frame.pos.1 as i32, frame.pos.0 as i32, text.as_str());
+        */
+        attroff(mode);
+    }
+    refresh();
+}
+
+pub fn read_command(x: usize, y: usize) -> String {
+    let mut result = String::new();
+    mv(x as i32, y as i32);
+    clrtoeol();
+    loop {
+        match Key::read() {
+            Key::Return => break,
+            Key::Backspace if !result.is_empty() => {
+                result.pop().unwrap();
+            },
+            Key::Char(c) => result.push(c),
+            _ => (),
+        }
+        mvprintw(y as i32, x as i32, &result);
+        clrtoeol();
+    }
+    result.as_str().trim().to_string()
 }
 
 pub fn move_to(x: usize, y: usize) {
@@ -161,20 +191,14 @@ pub fn move_to(x: usize, y: usize) {
 }
 
 pub fn cursor_pos() -> (usize, usize) {
-    unsafe {
-        (getcurx(stdscr) as usize, getcury(stdscr) as usize)
-    }
+    (getcurx(stdscr()) as usize, getcury(stdscr()) as usize)
 }
 
 pub fn width() -> usize {
-    unsafe {
-        getmaxx(stdscr) as usize
-    }
+    getmaxx(stdscr()) as usize
 }
 pub fn height() -> usize {
-    unsafe {
-        getmaxy(stdscr) as usize
-    }
+    getmaxy(stdscr()) as usize
 }
 
 pub enum Key {
@@ -197,23 +221,6 @@ impl Key {
             10 => Key::Return,
             _ => Key::Char(ch as u8 as char)
         }
-    }
-}
-
-pub fn attribute<F>(mode: u64, f: F)
-    where F: FnOnce() -> ()
-{
-    attron(mode);
-    f();
-    attroff(mode);
-}
-
-pub struct Attribute {
-}
-
-impl Attribute {
-    pub fn bold() -> u64 {
-        A_BOLD()
     }
 }
 

@@ -6,7 +6,8 @@
 ============================================================================*/
 
 use cursor::Cursor;
-use terminal::ColorPair;
+use terminal::{ColorPair, Frame};
+use config::Config;
 use terminal;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -16,10 +17,20 @@ pub enum Mode {
     Command,
 }
 
+impl Mode {
+    pub fn to_color(&self) -> ColorPair {
+        match *self {
+            Mode::Move => ColorPair::ModeMove,
+            Mode::Edit => ColorPair::ModeEdit,
+            Mode::Command => ColorPair::ModeCommand,
+        }
+    }
+}
+
 pub struct Status {
     pub mode: Mode,
     pub message: String,
-    pub visible_line_number: bool,
+    pub config: Config,
 }
 
 impl Status {
@@ -28,36 +39,27 @@ impl Status {
         Status {
             mode: Mode::Move,
             message: String::new(),
-            visible_line_number: false,
+            config: Config::new(),
         }
     }
 
-    pub fn draw(&self, cur: &Cursor) {
-
-        use terminal::Attribute;
-        let mut str = String::new();
-        match self.mode {
-            Mode::Move => str += "Move",
-            Mode::Edit => str += "Edit",
-            Mode::Command => str += "Command",
+    pub fn make_frames(&self, cur: &Cursor) -> Vec<Frame> {
+        let mut lines = vec![];
+        for _ in 0 .. terminal::height() - 1 {
+            lines.push(String::new());
         }
-        str += format!("({}, {})", cur.x, cur.y).as_str();
-
-        let mode_color = terminal::color_pair(terminal::mode_to_color_pair(&self.mode));
-        terminal::attribute(mode_color | Attribute::bold(), || {
-            terminal::print(0, terminal::height() - 1, &str);
-        });
-        terminal::clear_to_eol();
-
-        terminal::attribute(mode_color | Attribute::bold(), || {
-            terminal::print(0, terminal::height() - 1, &str)
-        });
-        terminal::clear_to_eol();
-
-        terminal::attribute(ColorPair::Default as u64 | Attribute::bold(), || {
-            terminal::print(str.len() + 1, terminal::height() - 1, &self.message)
-        });
-        terminal::clear_to_eol();
+        let status_line = format!("{} ({}, {})",
+            match self.mode {
+                Mode::Move =>    "   Move  ",
+                Mode::Edit =>    "   Edit  ",
+                Mode::Command => " Command ",
+            }, cur.x, cur.y);
+        vec![Frame{
+            pos: (0, terminal::height()-1),
+            lines: vec![status_line],
+            color: self.mode.to_color(),
+            attrs: vec![],
+        }]
     }
 }
 

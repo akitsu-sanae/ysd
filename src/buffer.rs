@@ -8,8 +8,9 @@
 use std::io::Read;
 use std::io::Write;
 use std::fs::File;
+use terminal::Frame;
+use config::Config;
 use terminal;
-use syntax_highlighter;
 
 pub struct Buffer {
     pub lines: Vec<String>
@@ -52,11 +53,37 @@ impl Buffer {
         }
     }
 
-    pub fn draw(&self, current_line: usize, is_visible_linenumber: bool) {
-        use std::cmp;
-        let top_line = cmp::max(cmp::min(current_line as i32 - terminal::height() as i32 / 2, self.lines.len() as i32 - terminal::height() as i32), 0) as usize;
-        let lines = &self.lines[top_line .. top_line + terminal::height()];
-        syntax_highlighter::draw(3, 0, lines);
+    pub fn make_frames(&self, top: usize, config: &Config) -> Vec<Frame> {
+
+        let mut lines = vec![];
+        let mut line_num_lines = vec![];
+        for i in top .. top + terminal::height()-1 {
+            lines.push(self.lines[i].clone());
+            if config.line_number_visible {
+                line_num_lines.push(format!("{}:", i.to_string()));
+            }
+        }
+        let x = if let Some(line) = line_num_lines.last() {
+            line.len()
+        } else {
+            0
+        };
+        let mut frames = vec![];
+        frames.push(Frame {
+            pos: (x, 0),
+            lines: lines,
+            color: terminal::ColorPair::Normal,
+            attrs: vec![],
+        });
+        if  config.line_number_visible {
+            frames.push(Frame {
+                pos: (0, 0),
+                lines: line_num_lines,
+                color: terminal::ColorPair::Normal,
+                attrs: vec![],
+            });
+        }
+        frames
     }
 
     pub fn is_valid_pos(&self, (x, y): (usize, usize)) -> bool {
