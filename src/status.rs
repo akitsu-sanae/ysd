@@ -54,9 +54,13 @@ impl Status {
                 Mode::Edit =>    "   Edit  ",
                 Mode::Command => " Command ",
             }, cur.x, cur.y);
-        vec![Frame{
-            pos: (0, terminal::height()-1),
-            lines: vec![status_line],
+        vec![Frame {
+            texts: vec![
+                terminal::Text {
+                    x: 0, y: terminal::height() - 1,
+                    content: status_line,
+                },
+            ],
             color: self.mode.to_color(),
             attrs: vec![],
         }]

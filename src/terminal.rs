@@ -125,12 +125,26 @@ pub fn terminate() {
     endwin();
 }
 
+pub struct Text {
+    pub x: usize,
+    pub y: usize,
+    pub content: String,
+}
 
 pub struct Frame {
-    pub pos: (usize, usize),
-    pub lines: Vec<String>,
+    pub texts: Vec<Text>,
     pub color: ColorPair,
     pub attrs: Vec<Attribute>,
+}
+
+impl Frame {
+    pub fn new(color: ColorPair) -> Self {
+        Frame {
+            texts: vec![],
+            color: color,
+            attrs: vec![],
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -153,15 +167,9 @@ pub fn draw(frames: Vec<Frame>) {
             color_pair(frame.color),
             |acc, attr| {acc | attr.to_u64()});
         attron(mode);
-        for (i, line) in frame.lines.iter().enumerate() {
-            mvprintw(i as i32 +frame.pos.1 as i32, frame.pos.0 as i32, &line);
+        for text in frame.texts {
+            mvprintw(text.y as i32, text.x as i32, &text.content);
         }
-        /*
-        let text = frame.lines.iter().fold(String::new(), |acc, line| {
-            format!("{}\n{}", acc, line)
-        });
-        mvprintw(frame.pos.1 as i32, frame.pos.0 as i32, text.as_str());
-        */
         attroff(mode);
     }
     refresh();

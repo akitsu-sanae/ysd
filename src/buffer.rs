@@ -55,35 +55,38 @@ impl Buffer {
 
     pub fn make_frames(&self, top: usize, config: &Config) -> Vec<Frame> {
 
-        let mut lines = vec![];
-        let mut line_num_lines = vec![];
-        for i in top .. top + terminal::height()-1 {
-            lines.push(self.lines[i].clone());
-            if config.line_number_visible {
-                line_num_lines.push(format!("{}:", i.to_string()));
+        use terminal::ColorPair;
+        let mut result = vec![];
+
+        // line number frame
+        if config.line_number_visible {
+            let mut frame = Frame::new(ColorPair::Normal);
+            for i in top .. top + terminal::height()-1 {
+                frame.texts.push(terminal::Text {
+                    x: 0,
+                    y: i - top,
+                    content: format!("{}: ", i),
+                });
             }
+            result.push(frame)
         }
-        let x = if let Some(line) = line_num_lines.last() {
-            line.len()
+
+        // main frame
+        let x = if config.line_number_visible {
+            (top + terminal::height() - 1).to_string().len() + 2
         } else {
             0
         };
-        let mut frames = vec![];
-        frames.push(Frame {
-            pos: (x, 0),
-            lines: lines,
-            color: terminal::ColorPair::Normal,
-            attrs: vec![],
-        });
-        if  config.line_number_visible {
-            frames.push(Frame {
-                pos: (0, 0),
-                lines: line_num_lines,
-                color: terminal::ColorPair::Normal,
-                attrs: vec![],
+        let mut main_frame = Frame::new(ColorPair::Normal);
+        for i in top .. top + terminal::height() - 1 {
+            main_frame.texts.push(terminal::Text {
+                x: x,
+                y: i - top,
+                content: self.lines[i].clone(),
             });
         }
-        frames
+        result.push(main_frame);
+        result
     }
 
     pub fn is_valid_pos(&self, (x, y): (usize, usize)) -> bool {
