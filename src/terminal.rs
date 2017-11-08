@@ -8,6 +8,7 @@
 use std::str::FromStr;
 
 use ncurses::*;
+use syntax_highlighter;
 
 // red, green, blue, yellow, magenta, cyan, black, white were pre defined
 #[derive(Debug, Clone, Copy)]
@@ -102,16 +103,16 @@ fn init_colors() {
     init_pair(ColorPair::ModeEdit as i16, Color::White as i16, EDIT_COLOR as i16);
     init_pair(ColorPair::ModeCommand as i16, Color::White as i16, COMMAND_COLOR as i16);
 
-    /*
-    let colors = syntax_highlighter::data();
-    init_pair(SyntaxKeyword as i16, colors.keyword.color as i16, Color::Trans as i16);
-    init_pair(SyntaxType as i16, colors.type_.color as i16, Color::Trans as i16);
-    init_pair(SyntaxNumber as i16, colors.number.color as i16, Color::Trans as i16);
-    init_pair(SyntaxString as i16, colors.string.color as i16, Color::Trans as i16);
-    init_pair(SyntaxChar as i16, colors.char.color as i16, Color::Trans as i16);
-    init_pair(SyntaxOperator as i16, colors.operator.color as i16, Color::Trans as i16);
-    init_pair(SyntaxComment as i16, colors.comment.color as i16, Color::Trans as i16);
-    */
+    let hi = &syntax_highlighter::data().data;
+    use syntax_highlighter::TokenType::*;
+    use self::ColorPair::*;
+    init_pair(SyntaxKeyword as i16, hi[&Keyword].color as i16, Color::Trans as i16);
+    init_pair(SyntaxType as i16, hi[&Type].color as i16, Color::Trans as i16);
+    init_pair(SyntaxNumber as i16, hi[&Number].color as i16, Color::Trans as i16);
+    init_pair(SyntaxString as i16, hi[&String].color as i16, Color::Trans as i16);
+    init_pair(SyntaxChar as i16, hi[&Char].color as i16, Color::Trans as i16);
+    init_pair(SyntaxOperator as i16, hi[&Operator].color as i16, Color::Trans as i16);
+    init_pair(SyntaxComment as i16, hi[&Comment].color as i16, Color::Trans as i16);
 
     bkgd(' ' as chtype | color_pair(ColorPair::Normal) as chtype);
 }

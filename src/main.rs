@@ -6,6 +6,8 @@
 ============================================================================*/
 
 extern crate toml;
+#[macro_use]
+extern crate lazy_static;
 extern crate ncurses;
 extern crate regex;
 
@@ -17,6 +19,7 @@ mod editor;
 mod status;
 mod config;
 mod terminal;
+mod syntax_highlighter;
 use editor::Editor;
 
 fn main() {

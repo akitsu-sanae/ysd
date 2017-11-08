@@ -10,7 +10,8 @@ use std::io::Write;
 use std::fs::File;
 use terminal::Frame;
 use config::Config;
-use terminal;
+use syntax_highlighter;
+use terminal::{self, ColorPair};
 
 pub struct Buffer {
     pub lines: Vec<String>
@@ -61,13 +62,14 @@ impl Buffer {
         // line number frame
         if config.line_number_visible {
             let mut frame = Frame::new(ColorPair::Normal);
+            let mut content = String::new();
             for i in top .. top + terminal::height()-1 {
-                frame.texts.push(terminal::Text {
-                    x: 0,
-                    y: i - top,
-                    content: format!("{}: ", i),
-                });
+                content += format!("{}: \n", i).as_str();
             }
+            frame.texts.push(terminal::Text {
+                x: 0, y: 0,
+                content: content,
+            });
             result.push(frame)
         }
 
@@ -78,14 +80,24 @@ impl Buffer {
             0
         };
         let mut main_frame = Frame::new(ColorPair::Normal);
-        for i in top .. top + terminal::height() - 1 {
-            main_frame.texts.push(terminal::Text {
-                x: x,
-                y: i - top,
-                content: self.lines[i].clone(),
-            });
-        }
+        let content = (top .. top + terminal::height()-1)
+            .map(|i| format!("{:1$}", self.lines[i], terminal::width() - 1))
+            .map(|line| {
+                if line.len() < terminal::width() {
+                    line
+                } else {
+                    line[0 .. terminal::width()-1].to_string()
+                }
+            })
+            .fold(String::new(), |acc, line| format!("{}\n{}", acc, line));
+        let main_text = terminal::Text {
+            x: x, y: 0,
+            content: content,
+        };
+        let mut highlight_frames = syntax_highlighter::make_frames(&main_text);
+        main_frame.texts.push(main_text);
         result.push(main_frame);
+        result.append(&mut highlight_frames);
         result
     }
 
