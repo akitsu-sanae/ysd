@@ -150,40 +150,41 @@ impl HighlightData {
         })
     }
 
-    fn make_frame(exprs: &Vec<String>, text: &Text, color: ColorPair) -> Frame {
+    fn make_frame(exprs: &Vec<String>, content: &str, color: ColorPair) -> Frame {
         let mut frame = Frame::new(color);
+        let width = content.find('\n').unwrap() + 1;
         for expr in exprs {
             let regex = Regex::new(&expr).unwrap();
-            for mat in regex.find_iter(&text.content) {
-                let y = text.y + mat.start() / terminal::width() + 1;
-                let x = text.y + mat.start() % terminal::width() - 1;
-                let content = &text.content[mat.start() .. mat.end()].to_string();
+            for mat in regex.find_iter(content) {
+                let x = mat.start() % width;
+                let y = mat.start() / width;
+                let content = content[mat.start() .. mat.end()].to_string();
                 frame.texts.push(Text {
                     x: x,
                     y: y,
-                    content: content.clone(),
+                    content: content,
                 });
             }
         }
         frame
     }
 
-    fn make_frames(&self, text: &terminal::Text) -> Vec<Frame> {
+    fn make_frames(&self, content: &str) -> Vec<Frame> {
         let mut result = vec![];
         let exprs = &self.data[&TokenType::Type].pat;
-        result.push(Self::make_frame(exprs, text, ColorPair::SyntaxType));
+        result.push(Self::make_frame(exprs, content, ColorPair::SyntaxType));
 
         let exprs = &self.data[&TokenType::Keyword].pat;
-        result.push(Self::make_frame(exprs, text, ColorPair::SyntaxKeyword));
+        result.push(Self::make_frame(exprs, content, ColorPair::SyntaxKeyword));
 
         let exprs = &self.data[&TokenType::Number].pat;
-        result.push(Self::make_frame(exprs, text, ColorPair::SyntaxNumber));
+        result.push(Self::make_frame(exprs, content, ColorPair::SyntaxNumber));
 
         let exprs = &self.data[&TokenType::String].pat;
-        result.push(Self::make_frame(exprs, text, ColorPair::SyntaxString));
+        result.push(Self::make_frame(exprs, content, ColorPair::SyntaxString));
 
         let exprs = &self.data[&TokenType::Char].pat;
-        result.push(Self::make_frame(exprs, text, ColorPair::SyntaxChar));
+        result.push(Self::make_frame(exprs, content, ColorPair::SyntaxChar));
         result
     }
 }
@@ -201,8 +202,8 @@ lazy_static! {
         });
 }
 
-pub fn make_frames(text: &terminal::Text) -> Vec<Frame> {
-    data().make_frames(text)
+pub fn make_frames(content: &str) -> Vec<Frame> {
+    data().make_frames(content)
 }
 
 

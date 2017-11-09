@@ -111,7 +111,7 @@ impl Editor {
                         self.status.message = format!("saved at {}", inputs[1]);
                     }
                     "enable" | "disable" => {
-                        match inputs[1] {
+                        match inputs[1].trim() {
                             "linenum" => self.status.config.line_number_visible = inputs[0] == "enable",
                             _ => self.status.message = format!("unknown flag: {}", inputs[1]),
                         }

@@ -133,6 +133,8 @@ pub struct Text {
 }
 
 pub struct Frame {
+    pub x: usize,
+    pub y: usize,
     pub texts: Vec<Text>,
     pub color: ColorPair,
     pub attrs: Vec<Attribute>,
@@ -141,6 +143,8 @@ pub struct Frame {
 impl Frame {
     pub fn new(color: ColorPair) -> Self {
         Frame {
+            x: 0,
+            y: 0,
             texts: vec![],
             color: color,
             attrs: vec![],
@@ -169,7 +173,9 @@ pub fn draw(frames: Vec<Frame>) {
             |acc, attr| {acc | attr.to_u64()});
         attron(mode);
         for text in frame.texts {
-            mvprintw(text.y as i32, text.x as i32, &text.content);
+            let x = frame.x + text.x;
+            let y = frame.y + text.y;
+            mvprintw(y as i32, x as i32, &text.content);
         }
         attroff(mode);
     }

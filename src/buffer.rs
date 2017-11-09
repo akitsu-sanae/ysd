@@ -8,10 +8,9 @@
 use std::io::Read;
 use std::io::Write;
 use std::fs::File;
-use terminal::Frame;
 use config::Config;
 use syntax_highlighter;
-use terminal::{self, ColorPair};
+use terminal::{self, ColorPair, Frame};
 
 pub struct Buffer {
     pub lines: Vec<String>
@@ -59,45 +58,50 @@ impl Buffer {
         use terminal::ColorPair;
         let mut result = vec![];
 
-        // line number frame
-        if config.line_number_visible {
-            let mut frame = Frame::new(ColorPair::Normal);
-            let mut content = String::new();
-            for i in top .. top + terminal::height()-1 {
-                content += format!("{}: \n", i).as_str();
-            }
-            frame.texts.push(terminal::Text {
-                x: 0, y: 0,
-                content: content,
-            });
-            result.push(frame)
-        }
-
         // main frame
-        let x = if config.line_number_visible {
+        let linenum_width = if config.line_number_visible {
             (top + terminal::height() - 1).to_string().len() + 2
         } else {
             0
         };
-        let mut main_frame = Frame::new(ColorPair::Normal);
+        let content_width = terminal::width() - linenum_width;
         let content = (top .. top + terminal::height()-1)
-            .map(|i| format!("{:1$}", self.lines[i], terminal::width() - 1))
+            .map(|i| format!("{:1$}", self.lines[i], content_width))
             .map(|line| {
-                if line.len() < terminal::width() {
+                if line.len() + linenum_width < terminal::width() {
                     line
                 } else {
-                    line[0 .. terminal::width()-1].to_string()
+                    line[0 .. content_width].to_string()
                 }
             })
             .fold(String::new(), |acc, line| format!("{}\n{}", acc, line));
-        let main_text = terminal::Text {
-            x: x, y: 0,
-            content: content,
-        };
-        let mut highlight_frames = syntax_highlighter::make_frames(&main_text);
-        main_frame.texts.push(main_text);
+        let content = content[1..].to_string();
+
+        let mut main_frame = Frame::new(ColorPair::Normal);
+        for (i, line) in content.lines().enumerate() {
+            main_frame.texts.push(terminal::Text {
+                x: linenum_width, y: i,
+                content: line.to_string(),
+            });
+        }
         result.push(main_frame);
+        let mut highlight_frames = syntax_highlighter::make_frames(&content);
+        for frame in highlight_frames.iter_mut() {
+            (*frame).x = linenum_width;
+        }
         result.append(&mut highlight_frames);
+
+        // line number frame
+        if config.line_number_visible {
+            let mut frame = Frame::new(ColorPair::Normal);
+            for (y, i) in (top .. top + terminal::height()-1).enumerate() {
+                frame.texts.push(terminal::Text {
+                    x: 0, y: y,
+                    content: format!("{}: ", i),
+                });
+            }
+            result.push(frame);
+        }
         result
     }
 

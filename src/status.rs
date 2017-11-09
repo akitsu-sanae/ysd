@@ -6,9 +6,8 @@
 ============================================================================*/
 
 use cursor::Cursor;
-use terminal::{ColorPair, Frame};
+use terminal::{self, ColorPair, Frame, Text};
 use config::Config;
-use terminal;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum Mode {
@@ -44,26 +43,37 @@ impl Status {
     }
 
     pub fn make_frames(&self, cur: &Cursor) -> Vec<Frame> {
-        let mut lines = vec![];
-        for _ in 0 .. terminal::height() - 1 {
-            lines.push(String::new());
-        }
         let status_line = format!("{} ({}, {})",
             match self.mode {
                 Mode::Move =>    "   Move  ",
                 Mode::Edit =>    "   Edit  ",
                 Mode::Command => " Command ",
             }, cur.x, cur.y);
-        vec![Frame {
+        let mut result = vec![];
+        result.push(Frame {
+            x: 0, y: terminal::height() - 1,
             texts: vec![
-                terminal::Text {
-                    x: 0, y: terminal::height() - 1,
-                    content: status_line,
+                Text {
+                    x: 0, y: 0,
+                    content: status_line.clone(),
                 },
             ],
             color: self.mode.to_color(),
             attrs: vec![],
-        }]
+        });
+        result.push(Frame {
+            x: status_line.len(),
+            y: terminal::height() - 1,
+            texts: vec![
+                Text {
+                    x: 0, y: 0,
+                    content: format!("  {}", self.message.clone()),
+                },
+            ],
+            color: ColorPair::Normal,
+            attrs: vec![],
+        });
+        result
     }
 }
 
