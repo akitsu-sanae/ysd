@@ -18,6 +18,7 @@ use terminal::{Color, ColorPair, Text, Frame};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TokenType {
     Keyword,
+    Identifier,
     Type,
     Operator,
     Comment,
@@ -30,6 +31,7 @@ impl TokenType {
     fn literal_pat(&self) -> Option<Vec<String>> {
         use self::TokenType::*;
         match *self {
+            Identifier => Some(vec![]), // dummy
             Number => Some(vec![r"\d+".to_string()]),
             String => Some(vec![r#""[^"]*""#.to_string()]),
             Char => Some(vec![r#"'[^']*'"#.to_string()]),
@@ -42,9 +44,9 @@ use std::slice::Iter;
 impl TokenType {
     fn iteration() -> Iter<'static, TokenType> {
         use self::TokenType::*;
-        static DATA : [TokenType; 7] = [
-            Keyword, Type, Operator, Comment,
-            Number, String, Char,
+        static DATA : [TokenType; 8] = [
+            Keyword, Identifier, Type, Operator,
+            Comment, Number, String, Char,
         ];
         DATA.into_iter()
     }
@@ -53,6 +55,7 @@ impl TokenType {
         use self::TokenType::*;
         match *self {
             Keyword => "keyword".to_string(),
+            Identifier => "identifier".to_string(),
             Type => "type".to_string(),
             Operator => "operator".to_string(),
             Comment => "comment".to_string(),
@@ -171,11 +174,35 @@ impl HighlightData {
 
     fn make_frames(&self, content: &str) -> Vec<Frame> {
         let mut result = vec![];
-        let exprs = &self.data[&TokenType::Type].pat;
-        result.push(Self::make_frame(exprs, content, ColorPair::SyntaxType));
 
-        let exprs = &self.data[&TokenType::Keyword].pat;
-        result.push(Self::make_frame(exprs, content, ColorPair::SyntaxKeyword));
+        let mut ident_frame = Frame::new(ColorPair::SyntaxIdentifer);
+        let mut keyword_frame = Frame::new(ColorPair::SyntaxKeyword);
+        let mut type_frame = Frame::new(ColorPair::SyntaxType);
+        let width = content.find('\n').unwrap() + 1;
+        let regex = Regex::new(r"[a-zA-Z][a-zA-Z0-9_]*").unwrap();
+
+        let keywords = &self.data[&TokenType::Keyword].pat;
+        let types = &self.data[&TokenType::Type].pat;
+        for mat in regex.find_iter(content) {
+            let x = mat.start() % width;
+            let y = mat.start() / width;
+            let content = content[mat.start() .. mat.end()].to_string();
+            let text = Text {
+                x: x, y: y,
+                content: content,
+            };
+            if keywords.contains(&text.content) {
+                keyword_frame.texts.push(text);
+            } else if types.contains(&text.content) {
+                type_frame.texts.push(text);
+            } else {
+                ident_frame.texts.push(text);
+            }
+        }
+
+        result.push(type_frame);
+        result.push(keyword_frame);
+        result.push(ident_frame);
 
         let exprs = &self.data[&TokenType::Number].pat;
         result.push(Self::make_frame(exprs, content, ColorPair::SyntaxNumber));

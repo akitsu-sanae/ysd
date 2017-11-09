@@ -10,7 +10,6 @@ use std::str::FromStr;
 use ncurses::*;
 use syntax_highlighter;
 
-// red, green, blue, yellow, magenta, cyan, black, white were pre defined
 #[derive(Debug, Clone, Copy)]
 pub enum Color {
     Trans = -1,
@@ -54,6 +53,7 @@ pub enum ColorPair {
     ModeCommand,
 
     SyntaxKeyword = 10,
+    SyntaxIdentifer,
     SyntaxType,
     SyntaxNumber,
     SyntaxString,
@@ -109,6 +109,7 @@ fn init_colors() {
     use syntax_highlighter::TokenType::*;
     use self::ColorPair::*;
     init_pair(SyntaxKeyword as i16, hi[&Keyword].color as i16, Color::Trans as i16);
+    init_pair(SyntaxIdentifer as i16, hi[&Identifier].color as i16, Color::Trans as i16);
     init_pair(SyntaxType as i16, hi[&Type].color as i16, Color::Trans as i16);
     init_pair(SyntaxNumber as i16, hi[&Number].color as i16, Color::Trans as i16);
     init_pair(SyntaxString as i16, hi[&String].color as i16, Color::Trans as i16);
