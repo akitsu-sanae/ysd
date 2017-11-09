@@ -60,6 +60,8 @@ pub enum ColorPair {
     SyntaxChar,
     SyntaxOperator,
     SyntaxComment,
+
+    LineNumber,
 }
 
 const MOVE_COLOR: Color = Color::Blue;
@@ -113,6 +115,8 @@ fn init_colors() {
     init_pair(SyntaxChar as i16, hi[&Char].color as i16, Color::Trans as i16);
     init_pair(SyntaxOperator as i16, hi[&Operator].color as i16, Color::Trans as i16);
     init_pair(SyntaxComment as i16, hi[&Comment].color as i16, Color::Trans as i16);
+
+    init_pair(LineNumber as i16, Color::Gray as i16, Color::DarkGray as i16);
 
     bkgd(' ' as chtype | color_pair(ColorPair::Normal) as chtype);
 }

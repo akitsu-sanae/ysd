@@ -10,7 +10,7 @@ use std::io::Write;
 use std::fs::File;
 use config::Config;
 use syntax_highlighter;
-use terminal::{self, ColorPair, Frame};
+use terminal::{self, ColorPair, Frame, Text};
 
 pub struct Buffer {
     pub lines: Vec<String>
@@ -54,8 +54,6 @@ impl Buffer {
     }
 
     pub fn make_frames(&self, top: usize, config: &Config) -> Vec<Frame> {
-
-        use terminal::ColorPair;
         let mut result = vec![];
 
         // main frame
@@ -79,7 +77,7 @@ impl Buffer {
 
         let mut main_frame = Frame::new(ColorPair::Normal);
         for (i, line) in content.lines().enumerate() {
-            main_frame.texts.push(terminal::Text {
+            main_frame.texts.push(Text {
                 x: linenum_width, y: i,
                 content: line.to_string(),
             });
@@ -93,9 +91,9 @@ impl Buffer {
 
         // line number frame
         if config.line_number_visible {
-            let mut frame = Frame::new(ColorPair::Normal);
+            let mut frame = Frame::new(ColorPair::LineNumber);
             for (y, i) in (top .. top + terminal::height()-1).enumerate() {
-                frame.texts.push(terminal::Text {
+                frame.texts.push(Text {
                     x: 0, y: y,
                     content: format!("{}: ", i),
                 });

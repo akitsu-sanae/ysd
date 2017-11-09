@@ -112,7 +112,10 @@ impl Editor {
                     }
                     "enable" | "disable" => {
                         match inputs[1].trim() {
-                            "linenum" => self.status.config.line_number_visible = inputs[0] == "enable",
+                            "linenum" => {
+                                self.status.config.line_number_visible = inputs[0] == "enable";
+                                self.status.mode = Mode::Move;
+                            },
                             _ => self.status.message = format!("unknown flag: {}", inputs[1]),
                         }
                     },

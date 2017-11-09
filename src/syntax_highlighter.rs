@@ -12,7 +12,7 @@ use std::str::FromStr;
 use std::collections::HashMap;
 use toml::{Parser, Table};
 use regex::Regex;
-use terminal::{self, Color, ColorPair, Text, Frame};
+use terminal::{Color, ColorPair, Text, Frame};
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
