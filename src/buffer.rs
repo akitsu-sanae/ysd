@@ -63,27 +63,26 @@ impl Buffer {
             0
         };
         let content_width = terminal::width() - linenum_width;
-        let content = (top .. top + terminal::height()-1)
-            .map(|i| format!("{:1$}", self.lines[i], content_width))
-            .map(|line| {
-                if line.len() + linenum_width < terminal::width() {
-                    line
-                } else {
-                    line[0 .. content_width].to_string()
-                }
-            })
-            .fold(String::new(), |acc, line| format!("{}\n{}", acc, line));
-        let content = content[1..].to_string();
+        let mut content = vec![];
+        for i in top .. top + terminal::height() - 1 {
+            let line = &self.lines[i];
+            if line.len() < content_width {
+                content.push(format!("{:1$}", line, content_width));
+            } else {
+                content.push(format!("{}", &line[0..content_width]));
+                content.push(format!("{:1$}", &line[content_width ..], content_width));
+            }
+        }
 
         let mut main_frame = Frame::new(ColorPair::Normal);
-        for (i, line) in content.lines().enumerate() {
+        for (i, line) in content.iter().enumerate() {
             main_frame.texts.push(Text {
-                x: linenum_width, y: i,
+                x: linenum_width, y: i + 1,
                 content: line.to_string(),
             });
         }
         result.push(main_frame);
-        let mut highlight_frames = syntax_highlighter::make_frames(&content);
+        let mut highlight_frames = syntax_highlighter::make_frames(&content.join("\n"));
         for frame in highlight_frames.iter_mut() {
             (*frame).x = linenum_width;
         }
