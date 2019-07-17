@@ -1,41 +1,30 @@
-/*============================================================================
-  Copyright (C) 2016 akitsu sanae
-  https://github.com/akitsu-sanae/ysd
-  Distributed under the Boost Software License, Version 1.0. (See accompanying
-  file LICENSE or copy at http://www.boost.org/LICENSE_1_0.txt)
-============================================================================*/
+extern crate termion;
 
-extern crate toml;
-#[macro_use]
-extern crate lazy_static;
-extern crate ncurses;
-extern crate regex;
+use std::io::stdin;
 
-use std::env;
+use termion::input::TermRead;
 
-mod buffer;
-mod cursor;
 mod editor;
-mod status;
-mod config;
-mod terminal;
-mod syntax_highlighter;
-use editor::Editor;
+mod event_worker;
+mod state;
+mod drawer;
+mod buffer;
+mod frame;
 
 fn main() {
-    let args: Vec<_> = env::args().collect();
+    let args: Vec<_> = ::std::env::args().collect();
     if args.len() != 2 {
         panic!("error: filename was not given.");
     }
-
-    let mut editor = Editor::new(&args[1]);
+    let stdin = stdin();
+    let mut editor = editor::Editor::from_file(&args[1]);
     editor.draw();
-
-    loop {
-        if editor.is_quit() {
+    for e in stdin.events() {
+        let e = e.unwrap();
+        editor.update(e);
+        if editor.state.is_quit {
             break;
         }
-        editor.update();
         editor.draw();
     }
 }
