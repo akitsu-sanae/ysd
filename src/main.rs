@@ -4,12 +4,12 @@ use std::io::stdin;
 
 use termion::input::TermRead;
 
+mod buffer;
+mod drawer;
 mod editor;
 mod event_worker;
-mod state;
-mod drawer;
-mod buffer;
 mod frame;
+mod state;
 
 fn main() {
     let args: Vec<_> = ::std::env::args().collect();
@@ -28,4 +28,3 @@ fn main() {
         editor.draw();
     }
 }
-

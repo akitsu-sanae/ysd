@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{buffer::{Buffer, BufferName}, frame::Frame};
+use crate::{
+    buffer::{Buffer, BufferName},
+    frame::Frame,
+};
 
 pub struct State {
     pub buffers: HashMap<BufferName, Buffer>,
@@ -26,4 +29,3 @@ impl State {
         }
     }
 }
-

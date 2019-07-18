@@ -1,16 +1,14 @@
 use termion::event::{Event, Key};
 
-use crate::state::State;
 use super::EventWorker;
+use crate::state::State;
 
 #[derive(Debug)]
-pub struct EditWorker {
-}
+pub struct EditWorker {}
 
 impl Default for EditWorker {
     fn default() -> Self {
-        EditWorker {
-        }
+        EditWorker {}
     }
 }
 
@@ -22,4 +20,3 @@ impl EventWorker for EditWorker {
         }
     }
 }
-

@@ -1,4 +1,3 @@
-
 pub struct Frame {
     pub x: u16,
     pub y: u16,
@@ -17,4 +16,3 @@ impl Frame {
         }
     }
 }
-

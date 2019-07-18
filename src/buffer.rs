@@ -1,5 +1,5 @@
-use std::io::Read;
 use std::fs::File;
+use std::io::Read;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct BufferName(pub String);
@@ -9,7 +9,6 @@ impl fmt::Display for BufferName {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
     }
-
 }
 
 pub struct Buffer {
@@ -19,14 +18,12 @@ pub struct Buffer {
 impl Buffer {
     pub fn from_file(filename: &str) -> Self {
         let mut text = String::new();
-        File::open(filename).and_then(|mut f| {
-            f.read_to_string(&mut text)
-        }).expect("can not open file");
+        File::open(filename)
+            .and_then(|mut f| f.read_to_string(&mut text))
+            .expect("can not open file");
 
         Buffer {
             data: text.lines().map(str::to_string).collect(),
         }
     }
 }
-
-

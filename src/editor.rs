@@ -1,8 +1,8 @@
 use termion::event::Event;
 
-use crate::state::State;
 use crate::drawer::Drawer;
-use crate::event_worker::{EventWorker, edit_worker::EditWorker};
+use crate::event_worker::{edit_worker::EditWorker, EventWorker};
+use crate::state::State;
 
 pub struct Editor {
     pub event_worker: Box<dyn EventWorker>,
@@ -30,4 +30,3 @@ impl Editor {
         self.drawer.draw(&self.state);
     }
 }
-
