@@ -19,9 +19,10 @@ impl Drawer {
                 .get(buf_name)
                 .expect(format!("internal error: unknown buffer name {}", buf_name).as_str());
             for (i, line) in buf.data.iter().enumerate() {
-                write!(self.out, "{}{}", Goto(frame.x, frame.y + i as u16), line).unwrap();
+                write!(self.out, "{}{}", Goto(frame.x + 1, frame.y + 1 + i as u16), line).unwrap();
             }
         }
+        write!(self.out, "{}", Goto(state.cursor.x + 1, state.cursor.y + 1)).unwrap();
         self.out.flush().unwrap();
     }
 }

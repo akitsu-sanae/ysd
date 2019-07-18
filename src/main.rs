@@ -10,6 +10,8 @@ mod editor;
 mod event_worker;
 mod frame;
 mod state;
+mod cursor;
+mod util;
 
 fn main() {
     let args: Vec<_> = ::std::env::args().collect();

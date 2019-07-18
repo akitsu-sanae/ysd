@@ -9,8 +9,8 @@ impl Frame {
     pub fn screen() -> Self {
         let (width, height) = ::termion::terminal_size().expect("can not get screen size");
         Frame {
-            x: 1,
-            y: 1,
+            x: 0,
+            y: 0,
             width: width,
             height: height,
         }

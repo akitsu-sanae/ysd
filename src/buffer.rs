@@ -26,4 +26,8 @@ impl Buffer {
             data: text.lines().map(str::to_string).collect(),
         }
     }
+
+    pub fn insert(&mut self, (x, y): (u16, u16), c: char) {
+        self.data[y as usize].insert(x as usize, c);
+    }
 }

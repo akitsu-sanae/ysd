@@ -3,11 +3,14 @@ use std::collections::HashMap;
 use crate::{
     buffer::{Buffer, BufferName},
     frame::Frame,
+    cursor::Cursor,
 };
 
 pub struct State {
     pub buffers: HashMap<BufferName, Buffer>,
     pub frames: HashMap<BufferName, Frame>,
+    pub current_buffer_name: BufferName,
+    pub cursor: Cursor,
     pub is_quit: bool,
 }
 
@@ -20,12 +23,22 @@ impl State {
         buffers.insert(initial_buffer_name.clone(), buffer);
 
         let mut frames = HashMap::new();
-        frames.insert(initial_buffer_name, Frame::screen());
+        frames.insert(initial_buffer_name.clone(), Frame::screen());
 
         State {
             buffers: buffers,
             frames: frames,
+            current_buffer_name: initial_buffer_name,
+            cursor: Cursor::default(),
             is_quit: false,
         }
+    }
+
+    pub fn current_buffer(&self) -> &Buffer {
+        self.buffers.get(&self.current_buffer_name).unwrap()
+    }
+
+    pub fn current_buffer_mut(&mut self) -> &mut Buffer {
+        self.buffers.get_mut(&self.current_buffer_name).unwrap()
     }
 }
