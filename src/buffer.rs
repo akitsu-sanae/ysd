@@ -27,7 +27,7 @@ impl Buffer {
         }
     }
 
-    pub fn insert(&mut self, (x, y): (u16, u16), c: char) {
+    pub fn insert(&mut self, (x, y): (i32, i32), c: char) {
         self.data[y as usize].insert(x as usize, c);
     }
 }

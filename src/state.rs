@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use crate::{
     buffer::{Buffer, BufferName},
-    frame::Frame,
     cursor::Cursor,
+    frame::Frame,
 };
 
 pub struct State {
@@ -11,6 +11,7 @@ pub struct State {
     pub frames: HashMap<BufferName, Frame>,
     pub current_buffer_name: BufferName,
     pub cursor: Cursor,
+    pub message: String,
     pub is_quit: bool,
 }
 
@@ -30,6 +31,7 @@ impl State {
             frames: frames,
             current_buffer_name: initial_buffer_name,
             cursor: Cursor::default(),
+            message: String::new(),
             is_quit: false,
         }
     }

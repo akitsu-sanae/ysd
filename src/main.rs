@@ -5,12 +5,12 @@ use std::io::stdin;
 use termion::input::TermRead;
 
 mod buffer;
+mod cursor;
 mod drawer;
 mod editor;
 mod event_worker;
 mod frame;
 mod state;
-mod cursor;
 mod util;
 
 fn main() {
