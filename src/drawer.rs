@@ -6,7 +6,9 @@ use termion::input::MouseTerminal;
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::screen::AlternateScreen;
 
-use crate::state::State;
+use frame::Frame;
+use layout::Layout;
+use state::State;
 
 pub struct Drawer {
     out: MouseTerminal<AlternateScreen<RawTerminal<Stdout>>>,
@@ -16,21 +18,30 @@ impl Drawer {
     pub fn draw(&mut self, state: &State) {
         // `+1` means convertion from 0-origin position to 1-origin position
 
-        for (ref buf_name, ref frame) in &state.frames {
-            let buf = state
-                .buffers
-                .get(buf_name)
-                .expect(format!("internal error: unknown buffer name {}", buf_name).as_str());
-            for (i, line) in buf.data.iter().enumerate() {
-                write!(
-                    self.out,
-                    "{}{}",
-                    Goto(frame.x as u16 + 1, frame.y as u16 + 1 + i as u16),
-                    line
-                )
-                .unwrap();
+        write!(self.out, "{}", clear::All).unwrap();
+        let mut draw_layout = |layout: &Layout, frame: &Frame| {
+            use self::Layout::*;
+            match layout {
+                Buffer(name) => {
+                    let buf = state
+                        .buffers
+                        .get(name)
+                        .expect(format!("internal error: unknown buffer name {}", name).as_str());
+                    for (i, line) in buf.data.iter().enumerate() {
+                        write!(
+                            self.out,
+                            "{}{}",
+                            Goto(frame.x as u16 + 1, frame.y as u16 + 1 + i as u16),
+                            line
+                        )
+                        .unwrap();
+                    }
+                }
             }
-        }
+        };
+
+        draw_layout(&state.layout, &Frame::screen());
+
         let (_, height) = ::termion::terminal_size().unwrap();
         write!(
             self.out,
