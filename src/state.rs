@@ -4,6 +4,7 @@ use buffer::{Buffer, BufferName};
 use layout::Layout;
 use util::Direction;
 
+#[derive(Clone, Debug)]
 pub struct State {
     pub buffers: HashMap<BufferName, Buffer>,
     pub layout: Layout,
@@ -19,12 +20,19 @@ impl State {
         let initial_buffer_name = BufferName("<untitled>".to_string());
         buffers.insert(initial_buffer_name.clone(), body_buffer);
 
-        let (config_buffer, config_buffer_name) = Buffer::config_buffer();
-        buffers.insert(config_buffer_name.clone(), config_buffer);
+        let (mode_buffer, msg_buffer, mode_buffer_name, msg_buffer_name) = Buffer::config_buffer();
+        buffers.insert(mode_buffer_name.clone(), mode_buffer);
+        buffers.insert(msg_buffer_name.clone(), msg_buffer);
 
         let layout = Layout::Lined(
             Direction::Down,
-            Box::new(Layout::Buffer(config_buffer_name)),
+            1,
+            Box::new(Layout::Lined(
+                Direction::Left,
+                6,
+                Box::new(Layout::Buffer(mode_buffer_name)),
+                Box::new(Layout::Buffer(msg_buffer_name)),
+            )),
             Box::new(Layout::Buffer(initial_buffer_name.clone())),
         );
 
@@ -44,10 +52,21 @@ impl State {
         self.buffers.get_mut(&self.current_buffer_name).unwrap()
     }
 
+    pub fn update_mode(&mut self, mode: String) {
+        self.buffers
+            .get_mut(&BufferName("__config_mode_buffer_name__".to_string()))
+            .expect(
+                format!("internal error: unknown buffer name __config_mode_buffer_name__").as_str(),
+            )
+            .data = vec![mode];
+    }
+
     pub fn update_message(&mut self, msg: &str) {
         self.buffers
-            .get_mut(&BufferName("__config_buffer_name__".to_string()))
-            .expect(format!("internal error: unknown buffer name __config_buffer_name__").as_str())
+            .get_mut(&BufferName("__config_msg_buffer_name__".to_string()))
+            .expect(
+                format!("internal error: unknown buffer name __config_msg_buffer_name__").as_str(),
+            )
             .data = vec![msg.to_string()];
     }
 }

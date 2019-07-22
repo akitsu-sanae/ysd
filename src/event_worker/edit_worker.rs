@@ -1,3 +1,4 @@
+use termion::color::{Bg, Cyan, Reset};
 use termion::event::{Event, Key};
 
 use super::{command_worker::CommandWorker, EventWorker};
@@ -13,6 +14,10 @@ impl Default for EditWorker {
 }
 
 impl EventWorker for EditWorker {
+    fn mode(&self) -> String {
+        format!("{} Edit {}", Bg(Cyan), Bg(Reset))
+    }
+
     fn update(&mut self, state: &mut State, e: Event) -> Option<Box<dyn EventWorker>> {
         match e {
             Event::Key(Key::Char('\n')) => state.current_buffer_mut().insert_line_at_cursor(),

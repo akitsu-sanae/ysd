@@ -15,75 +15,100 @@ pub struct Drawer {
     out: MouseTerminal<AlternateScreen<RawTerminal<Stdout>>>,
 }
 
-fn splited_frames(dir: &Direction, frame: &Frame) -> (Frame, Frame) {
+fn splited_frames(dir: &Direction, line_width: i32, frame: &Frame) -> (Frame, Frame) {
     match dir {
         Direction::Up => (
             Frame {
-                x: 0,
-                y: 0,
+                x: frame.x,
+                y: frame.y,
                 width: frame.width,
-                height: 1,
+                height: line_width,
             },
             Frame {
-                x: 0,
-                y: 1,
+                x: frame.x,
+                y: frame.y + line_width,
                 width: frame.width,
-                height: frame.height - 1,
+                height: frame.height - line_width,
             },
         ),
         Direction::Down => (
             Frame {
-                x: 0,
-                y: frame.height - 1,
+                x: frame.x,
+                y: frame.y + frame.height - line_width,
                 width: frame.width,
-                height: 1,
+                height: line_width,
             },
             Frame {
-                x: 0,
-                y: 0,
+                x: frame.x,
+                y: frame.y,
                 width: frame.width,
-                height: frame.height - 1,
+                height: frame.height - line_width,
             },
         ),
-        Direction::Left => unimplemented!(),
-        Direction::Right => unimplemented!(),
+        Direction::Left => (
+            Frame {
+                x: frame.x,
+                y: frame.y,
+                width: line_width,
+                height: frame.height,
+            },
+            Frame {
+                x: frame.x + line_width,
+                y: frame.y,
+                width: frame.width - line_width,
+                height: frame.height,
+            },
+        ),
+        Direction::Right => (
+            Frame {
+                x: frame.x + frame.width - line_width,
+                y: frame.y,
+                width: line_width,
+                height: frame.height,
+            },
+            Frame {
+                x: frame.x,
+                y: frame.y,
+                width: frame.width - line_width,
+                height: frame.height,
+            },
+        ),
     }
 }
 
 impl Drawer {
     pub fn draw(&mut self, state: &State) {
-        // `+1` means convertion from 0-origin position to 1-origin position
-
         write!(self.out, "{}", clear::All).unwrap();
 
         fn draw_layout(out: &mut impl Write, state: &State, layout: &Layout, frame: &Frame) {
             use self::Layout::*;
+            use std::convert::TryInto;
             match layout {
                 Buffer(name) => {
                     let buf = state
                         .buffers
                         .get(name)
                         .expect(format!("internal error: unknown buffer name {}", name).as_str());
+
+                    // `+1` means convertion from 0-origin position to 1-origin position
+                    let frame_x: u16 = (frame.x + 1).try_into().unwrap();
+                    let frame_y: u16 = (frame.y + 1).try_into().unwrap();
+                    let frame_height: u16 = frame.height.try_into().unwrap();
+
                     for (i, line) in buf.data.iter().enumerate() {
-                        if i as i32 >= frame.height {
+                        if i as u16 >= frame_height {
                             break;
                         }
-                        write!(
-                            out,
-                            "{}{}",
-                            Goto(frame.x as u16 + 1, frame.y as u16 + 1 + i as u16),
-                            line
-                        )
-                        .unwrap();
+                        write!(out, "{}{}", Goto(frame_x, frame_y + i as u16), line).unwrap();
                     }
                     if name == &state.current_buffer_name {
-                        let x = frame.x + buf.cursor.x;
-                        let y = frame.y + buf.cursor.y;
-                        write!(out, "{}{}", Goto(x as u16 + 1, y as u16 + 1), Save).unwrap();
+                        let x: u16 = (frame.x + buf.cursor.x + 1).try_into().unwrap();
+                        let y: u16 = (frame.y + buf.cursor.y + 1).try_into().unwrap();
+                        write!(out, "{}{}", Goto(x, y), Save).unwrap();
                     }
                 }
-                Lined(dir, line, body) => {
-                    let (line_frame, body_frame) = splited_frames(dir, frame);
+                Lined(dir, line_width, line, body) => {
+                    let (line_frame, body_frame) = splited_frames(dir, *line_width, frame);
                     draw_layout(out, state, line, &line_frame);
                     draw_layout(out, state, body, &body_frame);
                 }

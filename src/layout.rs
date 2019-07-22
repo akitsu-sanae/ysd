@@ -4,5 +4,7 @@ use util::Direction;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Layout {
     Buffer(BufferName),
-    Lined(Direction, Box<Layout>, Box<Layout>),
+
+    //    line pos  width    line          body
+    Lined(Direction, i32, Box<Layout>, Box<Layout>),
 }

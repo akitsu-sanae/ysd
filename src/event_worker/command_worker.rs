@@ -1,3 +1,4 @@
+use termion::color::{Bg, Magenta, Reset};
 use termion::event::{Event, Key};
 
 use super::{edit_worker::EditWorker, EventWorker};
@@ -44,6 +45,10 @@ impl Default for CommandWorker {
 }
 
 impl EventWorker for CommandWorker {
+    fn mode(&self) -> String {
+        format!("{} Cmd  {}", Bg(Magenta), Bg(Reset))
+    }
+
     fn update(&mut self, state: &mut State, e: Event) -> Option<Box<dyn EventWorker>> {
         match e {
             Event::Key(Key::Char('\n')) => {

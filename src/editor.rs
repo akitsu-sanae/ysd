@@ -14,7 +14,8 @@ impl Editor {
     pub fn from_file(filename: &str) -> Self {
         let event_worker = Box::new(CommandWorker::default());
         let drawer = Drawer::default();
-        let state = State::from_file(filename);
+        let mut state = State::from_file(filename);
+        state.update_mode(event_worker.mode());
         Editor {
             event_worker: event_worker,
             state: state,
@@ -24,6 +25,7 @@ impl Editor {
 
     pub fn update(&mut self, e: Event) {
         if let Some(next_worker) = self.event_worker.update(&mut self.state, e) {
+            self.state.update_mode(next_worker.mode());
             self.event_worker = next_worker;
         }
     }

@@ -14,6 +14,7 @@ impl fmt::Display for BufferName {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Buffer {
     pub data: Vec<String>,
     pub cursor: Cursor,
@@ -32,13 +33,19 @@ impl Buffer {
         }
     }
 
-    pub fn config_buffer() -> (Buffer, BufferName) {
+    pub fn empty() -> Self {
+        Buffer {
+            data: vec![],
+            cursor: Cursor::default(),
+        }
+    }
+
+    pub fn config_buffer() -> (Buffer, Buffer, BufferName, BufferName) {
         (
-            Buffer {
-                data: vec![],
-                cursor: Cursor::default(),
-            },
-            BufferName("__config_buffer_name__".to_string()),
+            Buffer::empty(),
+            Buffer::empty(),
+            BufferName("__config_mode_buffer_name__".to_string()),
+            BufferName("__config_msg_buffer_name__".to_string()),
         )
     }
 

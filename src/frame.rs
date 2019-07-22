@@ -1,3 +1,4 @@
+#[derive(Debug, Clone)]
 pub struct Frame {
     pub x: i32,
     pub y: i32,
