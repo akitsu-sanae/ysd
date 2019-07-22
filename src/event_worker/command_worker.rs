@@ -16,7 +16,7 @@ impl CommandWorker {
             match (command, inputs.as_slice()) {
                 (":go", [dir, distance]) => {
                     if let (Ok(dir), Ok(distance)) = (dir.parse(), distance.parse()) {
-                        state.cursor.go(dir, distance);
+                        state.current_buffer_mut().cursor.go(dir, distance);
                     } else {
                         state.message = format!("usage :go <direction> <distance>")
                     }
@@ -58,7 +58,6 @@ impl EventWorker for CommandWorker {
             }
             _ => (),
         }
-        state.cursor.x = self.input.len() as i32;
         None
     }
 }

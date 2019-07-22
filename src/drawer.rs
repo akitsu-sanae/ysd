@@ -1,7 +1,7 @@
 use std::io::{stdout, Stdout, Write};
 
 use termion::clear;
-use termion::cursor::Goto;
+use termion::cursor::{Goto, Restore, Save};
 use termion::input::MouseTerminal;
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::screen::AlternateScreen;
@@ -36,6 +36,11 @@ impl Drawer {
                         )
                         .unwrap();
                     }
+                    if name == &state.current_buffer_name {
+                        let x = frame.x + buf.cursor.x;
+                        let y = frame.y + buf.cursor.y;
+                        write!(self.out, "{}{}", Goto(x as u16 + 1, y as u16 + 1), Save).unwrap();
+                    }
                 }
             }
         };
@@ -51,7 +56,7 @@ impl Drawer {
             state.message
         )
         .unwrap();
-        // write!(self.out, "{}", Goto(state.cursor.x + 1, state.cursor.y + 1)).unwrap();
+        write!(self.out, "{}", Restore).unwrap();
         self.out.flush().unwrap();
     }
 }

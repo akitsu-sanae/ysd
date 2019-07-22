@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use crate::{
     buffer::{Buffer, BufferName},
-    cursor::Cursor,
     layout::Layout,
 };
 
@@ -10,7 +9,6 @@ pub struct State {
     pub buffers: HashMap<BufferName, Buffer>,
     pub layout: Layout,
     pub current_buffer_name: BufferName,
-    pub cursor: Cursor,
     pub message: String,
     pub is_quit: bool,
 }
@@ -29,7 +27,6 @@ impl State {
             buffers: buffers,
             layout: layout,
             current_buffer_name: initial_buffer_name,
-            cursor: Cursor::default(),
             message: String::new(),
             is_quit: false,
         }
