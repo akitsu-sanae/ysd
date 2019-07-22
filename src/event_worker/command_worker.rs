@@ -23,6 +23,7 @@ impl CommandWorker {
                     }
                 }
                 (":edit", []) => return Some(Box::new(EditWorker::default())),
+                (":save-as", [filename]) => state.current_buffer().save_as(filename).unwrap(), // TODO: remove unwrap
                 (":quit", []) => state.is_quit = true,
                 _ => {
                     // FIXME: do not use `{:?}`

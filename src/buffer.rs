@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::Read;
+use std::io::Write;
 
 use cursor::Cursor;
 use util::Direction;
@@ -31,6 +32,14 @@ impl Buffer {
             data: text.lines().map(str::to_string).collect(),
             cursor: Cursor::default(),
         }
+    }
+
+    pub fn save_as(&self, filename: &str) -> Result<(), String> {
+        // TODO: remove unwrap
+        let mut file = File::create(filename).unwrap();
+        writeln!(file, "{}", self.data.join("\n")).unwrap();
+        file.flush().unwrap();
+        Ok(())
     }
 
     pub fn empty() -> Self {
