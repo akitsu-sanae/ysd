@@ -18,14 +18,16 @@ impl CommandWorker {
                     if let (Ok(dir), Ok(distance)) = (dir.parse(), distance.parse()) {
                         state.current_buffer_mut().cursor.go(dir, distance);
                     } else {
-                        state.message = format!("usage :go <direction> <distance>")
+                        state.update_message("usage :go <direction> <distance>");
                     }
                 }
                 (":edit", []) => return Some(Box::new(EditWorker::default())),
                 (":quit", []) => state.is_quit = true,
                 _ => {
                     // FIXME: do not use `{:?}`
-                    state.message = format!("invalid args for command {}: {:?}", command, inputs);
+                    state.update_message(
+                        format!("invalid args for command {}: {:?}", command, inputs).as_str(),
+                    );
                 }
             }
         }
@@ -54,7 +56,7 @@ impl EventWorker for CommandWorker {
             }
             Event::Key(Key::Char(c)) => {
                 self.input.push(c);
-                state.message = self.input.clone();
+                state.update_message(self.input.as_str());
             }
             _ => (),
         }

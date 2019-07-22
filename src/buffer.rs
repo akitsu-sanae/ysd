@@ -32,6 +32,16 @@ impl Buffer {
         }
     }
 
+    pub fn config_buffer() -> (Buffer, BufferName) {
+        (
+            Buffer {
+                data: vec![],
+                cursor: Cursor::default(),
+            },
+            BufferName("__config_buffer_name__".to_string()),
+        )
+    }
+
     pub fn insert_line_at_cursor(&mut self) {
         let (left, right) = self.data[self.cursor.y as usize].split_at(self.cursor.x as usize);
         let (left, right) = (left.to_string(), right.to_string());
