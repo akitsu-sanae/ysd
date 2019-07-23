@@ -3,7 +3,8 @@ use std::io::Read;
 use std::io::Write;
 
 use cursor::Cursor;
-use util::Direction;
+use frame::Frame;
+use util::{clamp, Direction};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct BufferName(pub String);
@@ -70,5 +71,10 @@ impl Buffer {
     pub fn insert_at_cursor(&mut self, c: char) {
         self.data[self.cursor.y as usize].insert(self.cursor.x as usize, c);
         self.cursor.go(Direction::Right, 1);
+    }
+
+    pub fn fix_cursor_pos(&mut self, frame: &Frame) {
+        self.cursor.x = clamp(self.cursor.x, 0, frame.width - 1);
+        self.cursor.y = clamp(self.cursor.y, 0, self.data.len() as i32 - 1);
     }
 }

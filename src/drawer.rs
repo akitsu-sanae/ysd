@@ -11,71 +11,9 @@ use buffer::Buffer;
 use frame::Frame;
 use layout::Layout;
 use state::State;
-use util::Direction;
 
 pub struct Drawer {
     out: MouseTerminal<AlternateScreen<RawTerminal<Stdout>>>,
-}
-
-fn splited_frames(dir: &Direction, line_width: i32, frame: &Frame) -> (Frame, Frame) {
-    match dir {
-        Direction::Up => (
-            Frame {
-                x: frame.x,
-                y: frame.y,
-                width: frame.width,
-                height: line_width,
-            },
-            Frame {
-                x: frame.x,
-                y: frame.y + line_width,
-                width: frame.width,
-                height: frame.height - line_width,
-            },
-        ),
-        Direction::Down => (
-            Frame {
-                x: frame.x,
-                y: frame.y + frame.height - line_width,
-                width: frame.width,
-                height: line_width,
-            },
-            Frame {
-                x: frame.x,
-                y: frame.y,
-                width: frame.width,
-                height: frame.height - line_width,
-            },
-        ),
-        Direction::Left => (
-            Frame {
-                x: frame.x,
-                y: frame.y,
-                width: line_width,
-                height: frame.height,
-            },
-            Frame {
-                x: frame.x + line_width,
-                y: frame.y,
-                width: frame.width - line_width,
-                height: frame.height,
-            },
-        ),
-        Direction::Right => (
-            Frame {
-                x: frame.x + frame.width - line_width,
-                y: frame.y,
-                width: line_width,
-                height: frame.height,
-            },
-            Frame {
-                x: frame.x,
-                y: frame.y,
-                width: frame.width - line_width,
-                height: frame.height,
-            },
-        ),
-    }
 }
 
 fn draw_buffer(out: &mut impl Write, buffer: &Buffer, frame: &Frame) {
@@ -106,6 +44,13 @@ fn draw_buffer(out: &mut impl Write, buffer: &Buffer, frame: &Frame) {
         )
         .unwrap();
     }
+
+    // cursor
+    let x: u16 = (frame.x + buffer.cursor.x + 1).try_into().unwrap();
+    let y: u16 = (frame.y + buffer.cursor.y - top_line + 1)
+        .try_into()
+        .unwrap();
+    write!(out, "{}", Goto(x, y)).unwrap();
 }
 
 impl Drawer {
@@ -116,21 +61,20 @@ impl Drawer {
             use self::Layout::*;
             match layout {
                 Buffer(name) => {
-                    let buf = state
+                    let ref buf = state
                         .buffers
                         .get(name)
                         .expect(format!("internal error: unknown buffer name {}", name).as_str());
 
                     draw_buffer(out, buf, frame);
 
+                    // save cursor pos
                     if name == &state.current_buffer_name {
-                        let x: u16 = (frame.x + buf.cursor.x + 1).try_into().unwrap();
-                        let y: u16 = (frame.y + buf.cursor.y + 1).try_into().unwrap();
-                        write!(out, "{}{}", Goto(x, y), Save).unwrap();
+                        write!(out, "{}", Save).unwrap();
                     }
                 }
                 Lined(dir, line_width, line, body) => {
-                    let (line_frame, body_frame) = splited_frames(dir, *line_width, frame);
+                    let (line_frame, body_frame) = frame.split(dir, *line_width);
                     draw_layout(out, state, line, &line_frame);
                     draw_layout(out, state, body, &body_frame);
                 }

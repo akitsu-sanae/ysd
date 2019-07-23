@@ -1,4 +1,4 @@
-use crate::util::{clamp, Direction};
+use util::Direction;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Cursor {
@@ -21,8 +21,5 @@ impl Cursor {
             Left => self.x -= n,
             Right => self.x += n,
         }
-        let (width, height) = ::termion::terminal_size().expect("can not get screen size");
-        self.x = clamp(self.x, 0, width as i32 - 1);
-        self.y = clamp(self.y, 0, height as i32 - 1);
     }
 }

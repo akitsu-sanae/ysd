@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use buffer::{Buffer, BufferName};
+use frame::Frame;
 use layout::Layout;
 use util::Direction;
 
@@ -68,5 +69,28 @@ impl State {
                 format!("internal error: unknown buffer name __config_msg_buffer_name__").as_str(),
             )
             .data = vec![msg.to_string()];
+    }
+
+    fn clamp_cursor_impl(&mut self, layout: &Layout, frame: &Frame) {
+        use self::Layout::*;
+        match layout {
+            Buffer(name) => {
+                let ref mut buf = self
+                    .buffers
+                    .get_mut(name)
+                    .expect(format!("internal error: unknown buffer name {}", name).as_str());
+
+                buf.fix_cursor_pos(frame);
+            }
+            Lined(dir, line_width, line, body) => {
+                let (line_frame, body_frame) = frame.split(dir, *line_width);
+                self.clamp_cursor_impl(line, &line_frame);
+                self.clamp_cursor_impl(body, &body_frame);
+            }
+        }
+    }
+
+    pub fn clamp_cursors(&mut self) {
+        self.clamp_cursor_impl(&self.layout.clone(), &Frame::screen());
     }
 }
