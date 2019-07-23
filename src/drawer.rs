@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use std::io::{stdout, Stdout, Write};
 
 use termion::clear;
@@ -6,6 +7,7 @@ use termion::input::MouseTerminal;
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::screen::AlternateScreen;
 
+use buffer::Buffer;
 use frame::Frame;
 use layout::Layout;
 use state::State;
@@ -76,13 +78,42 @@ fn splited_frames(dir: &Direction, line_width: i32, frame: &Frame) -> (Frame, Fr
     }
 }
 
+fn draw_buffer(out: &mut impl Write, buffer: &Buffer, frame: &Frame) {
+    // `+1` means convertion from 0-origin position to 1-origin position
+    let frame_x: u16 = (frame.x + 1).try_into().unwrap();
+    let frame_y: u16 = (frame.y + 1).try_into().unwrap();
+
+    let ref cursor = buffer.cursor;
+
+    let top_line = if cursor.y < frame.height / 2 {
+        0
+    } else if cursor.y + frame.height / 2 > buffer.data.len() as i32 {
+        buffer.data.len() as i32 - frame.height
+    } else {
+        cursor.y - frame.height / 2
+    };
+
+    for i in { 0..frame.height } {
+        write!(
+            out,
+            "{}{}",
+            Goto(frame_x, frame_y + i as u16),
+            if i + top_line < buffer.data.len() as i32 {
+                buffer.data[(top_line + i) as usize].as_str()
+            } else {
+                ""
+            }
+        )
+        .unwrap();
+    }
+}
+
 impl Drawer {
     pub fn draw(&mut self, state: &State) {
         write!(self.out, "{}", clear::All).unwrap();
 
         fn draw_layout(out: &mut impl Write, state: &State, layout: &Layout, frame: &Frame) {
             use self::Layout::*;
-            use std::convert::TryInto;
             match layout {
                 Buffer(name) => {
                     let buf = state
@@ -90,17 +121,8 @@ impl Drawer {
                         .get(name)
                         .expect(format!("internal error: unknown buffer name {}", name).as_str());
 
-                    // `+1` means convertion from 0-origin position to 1-origin position
-                    let frame_x: u16 = (frame.x + 1).try_into().unwrap();
-                    let frame_y: u16 = (frame.y + 1).try_into().unwrap();
-                    let frame_height: u16 = frame.height.try_into().unwrap();
+                    draw_buffer(out, buf, frame);
 
-                    for (i, line) in buf.data.iter().enumerate() {
-                        if i as u16 >= frame_height {
-                            break;
-                        }
-                        write!(out, "{}{}", Goto(frame_x, frame_y + i as u16), line).unwrap();
-                    }
                     if name == &state.current_buffer_name {
                         let x: u16 = (frame.x + buf.cursor.x + 1).try_into().unwrap();
                         let y: u16 = (frame.y + buf.cursor.y + 1).try_into().unwrap();
