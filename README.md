@@ -12,31 +12,15 @@ Ysd is a text editor made with Rust lang.
 # How to use
 
 * `ysd <filename>` ... open file
-* in Move Mode (default)
+* in Command Mode (default)
     - j ... move left
     - l ... move right
     - i ... move up
     - k ... move down
-    - a ... chage mode to Edit
-    - : ... change mode to Command
-    - F1 ... exit
+    - `:edit` ... change to Edit Mode
+    - `:save-as <filename>` ... save current buffer as `<filename>`
+    - `:quit` ... quit ysd
 * in Edit Mode
-    - Esc ... change mode to Move
+    - Esc ... change to Command Mode
     - otherwise ... insert charactor at current cursor position.
-* in Command Mode
-    - move ... change mode to Move
-    - save [filename] ... save current buffer as [filename]
-
-
-# Copyright
-Copyright (C) 2016 akitsu sanae.  
-Distributed under the Boost Software License, Version 1.0. 
-(See accompanying file LICENSE_1_0 or copy at http://www.boost/org/LICENSE_1_0.txt)  
-
-
-ysd uses [ncurses-rs](https://github.com/jeaye/ncurses-rs), which is licensed by the MIT license.  
-
-> Copyright (c) 2016 Jesse 'Jeaye' Wilkerson
-
-
 
