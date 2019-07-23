@@ -3,6 +3,7 @@ use termion::event::{Event, Key};
 
 use super::{edit_worker::EditWorker, EventWorker};
 use state::State;
+use util::Direction;
 
 #[derive(Debug)]
 pub struct CommandWorker {
@@ -10,6 +11,18 @@ pub struct CommandWorker {
 }
 
 impl CommandWorker {
+    fn apply_immediately_command(&mut self, state: &mut State) -> Option<Box<dyn EventWorker>> {
+        match self.input.as_str() {
+            "i" => state.current_buffer_mut().cursor.go(Direction::Up, 1),
+            "j" => state.current_buffer_mut().cursor.go(Direction::Left, 1),
+            "k" => state.current_buffer_mut().cursor.go(Direction::Down, 1),
+            "l" => state.current_buffer_mut().cursor.go(Direction::Right, 1),
+            _ => return None,
+        }
+        self.input = String::new();
+        None
+    }
+
     fn apply_buildin_command(&mut self, state: &mut State) -> Option<Box<dyn EventWorker>> {
         let mut inputs = self.input.split_whitespace();
         if let Some(command) = inputs.next() {
@@ -63,6 +76,7 @@ impl EventWorker for CommandWorker {
             Event::Key(Key::Char(c)) => {
                 self.input.push(c);
                 state.update_message(self.input.as_str());
+                return self.apply_immediately_command(state);
             }
             _ => (),
         }
