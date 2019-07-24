@@ -45,7 +45,7 @@ impl Buffer {
 
     pub fn empty() -> Self {
         Buffer {
-            data: vec![],
+            data: vec![String::new()],
             cursor: Cursor::default(),
         }
     }
@@ -60,7 +60,11 @@ impl Buffer {
     }
 
     pub fn insert_line_at_cursor(&mut self) {
-        let (left, right) = self.data[self.cursor.y as usize].split_at(self.cursor.x as usize);
+        let (left, right) = if self.cursor.x < self.data[self.cursor.y as usize].len() as i32 {
+            self.data[self.cursor.y as usize].split_at(self.cursor.x as usize)
+        } else {
+            (self.data[self.cursor.y as usize].as_str(), "")
+        };
         let (left, right) = (left.to_string(), right.to_string());
         self.data[self.cursor.y as usize] = right;
         self.data.insert(self.cursor.y as usize, left);
@@ -69,7 +73,11 @@ impl Buffer {
     }
 
     pub fn insert_at_cursor(&mut self, c: char) {
-        self.data[self.cursor.y as usize].insert(self.cursor.x as usize, c);
+        if self.cursor.x < self.data[self.cursor.y as usize].len() as i32 {
+            self.data[self.cursor.y as usize].insert(self.cursor.x as usize, c);
+        } else {
+            self.data[self.cursor.y as usize].push(c);
+        }
         self.cursor.go(Direction::Right, 1);
     }
 

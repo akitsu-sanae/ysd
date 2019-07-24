@@ -11,6 +11,7 @@ use buffer::Buffer;
 use frame::Frame;
 use layout::Layout;
 use state::State;
+use util::clamp;
 
 pub struct Drawer {
     out: MouseTerminal<AlternateScreen<RawTerminal<Stdout>>>,
@@ -46,10 +47,14 @@ fn draw_buffer(out: &mut impl Write, buffer: &Buffer, frame: &Frame) {
     }
 
     // cursor
-    let x: u16 = (frame.x + buffer.cursor.x + 1).try_into().unwrap();
-    let y: u16 = (frame.y + buffer.cursor.y - top_line + 1)
+    let x = frame.x + buffer.cursor.x;
+    let y = frame.y + buffer.cursor.y;
+
+    let x: u16 = (clamp(x, 0, buffer.data[buffer.cursor.y as usize].len() as i32) + 1)
         .try_into()
         .unwrap();
+    let y: u16 = (y - top_line + 1).try_into().unwrap();
+
     write!(out, "{}", Goto(x, y)).unwrap();
 }
 
