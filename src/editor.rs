@@ -28,7 +28,7 @@ impl Editor {
             self.state.update_mode(next_worker.mode());
             self.event_worker = next_worker;
         }
-        self.state.clamp_cursors();
+        self.state.clamp_cursor();
     }
 
     pub fn draw(&mut self) {

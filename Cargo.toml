@@ -5,4 +5,5 @@ authors = ["akitsu"]
 
 [dependencies]
 termion = "*"
+lazy_static = "1.3.0"
 

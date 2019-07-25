@@ -1,3 +1,7 @@
+#![feature(try_trait)]
+
+#[macro_use]
+extern crate lazy_static;
 extern crate termion;
 
 use std::io::stdin;
@@ -5,6 +9,7 @@ use std::io::stdin;
 use termion::input::TermRead;
 
 mod buffer;
+mod config;
 mod cursor;
 mod drawer;
 mod editor;

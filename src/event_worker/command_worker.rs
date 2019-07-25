@@ -13,10 +13,10 @@ pub struct CommandWorker {
 impl CommandWorker {
     fn apply_immediately_command(&mut self, state: &mut State) -> Option<Box<dyn EventWorker>> {
         match self.input.as_str() {
-            "i" => state.current_buffer_mut().cursor.go(Direction::Up, 1),
-            "j" => state.current_buffer_mut().cursor.go(Direction::Left, 1),
-            "k" => state.current_buffer_mut().cursor.go(Direction::Down, 1),
-            "l" => state.current_buffer_mut().cursor.go(Direction::Right, 1),
+            "i" => state.current_panel_mut().cursor.go(Direction::Up, 1),
+            "j" => state.current_panel_mut().cursor.go(Direction::Left, 1),
+            "k" => state.current_panel_mut().cursor.go(Direction::Down, 1),
+            "l" => state.current_panel_mut().cursor.go(Direction::Right, 1),
             _ => return None,
         }
         self.input = String::new();
@@ -30,13 +30,15 @@ impl CommandWorker {
             match (command, inputs.as_slice()) {
                 (":go", [dir, distance]) => {
                     if let (Ok(dir), Ok(distance)) = (dir.parse(), distance.parse()) {
-                        state.current_buffer_mut().cursor.go(dir, distance);
+                        state.current_panel_mut().cursor.go(dir, distance);
                     } else {
                         state.update_message("usage :go <direction> <distance>");
                     }
                 }
                 (":edit", []) => return Some(Box::new(EditWorker::default())),
-                (":save-as", [filename]) => state.current_buffer().save_as(filename).unwrap(), // TODO: remove unwrap
+                (":save-as", [filename]) => {
+                    state.current_buffer().save_as(filename).unwrap(); // remove unwrap
+                }
                 (":quit", []) => state.is_quit = true,
                 _ => {
                     // FIXME: do not use `{:?}`

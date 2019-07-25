@@ -8,6 +8,7 @@ use termion::raw::{IntoRawMode, RawTerminal};
 use termion::screen::AlternateScreen;
 
 use buffer::Buffer;
+use cursor::Cursor;
 use frame::Frame;
 use layout::Layout;
 use state::State;
@@ -17,12 +18,10 @@ pub struct Drawer {
     out: MouseTerminal<AlternateScreen<RawTerminal<Stdout>>>,
 }
 
-fn draw_buffer(out: &mut impl Write, buffer: &Buffer, frame: &Frame) {
+fn draw_buffer(out: &mut impl Write, buffer: &Buffer, cursor: &Cursor, frame: &Frame) {
     // `+1` means convertion from 0-origin position to 1-origin position
     let frame_x: u16 = (frame.x + 1).try_into().unwrap();
     let frame_y: u16 = (frame.y + 1).try_into().unwrap();
-
-    let ref cursor = buffer.cursor;
 
     let top_line = if cursor.y < frame.height / 2 {
         0
@@ -47,10 +46,10 @@ fn draw_buffer(out: &mut impl Write, buffer: &Buffer, frame: &Frame) {
     }
 
     // cursor
-    let x = frame.x + buffer.cursor.x;
-    let y = frame.y + buffer.cursor.y;
+    let x = frame.x + cursor.x;
+    let y = frame.y + cursor.y;
 
-    let x: u16 = (clamp(x, 0, buffer.data[buffer.cursor.y as usize].len() as i32) + 1)
+    let x: u16 = (clamp(x, 0, buffer.data[cursor.y as usize].len() as i32) + 1)
         .try_into()
         .unwrap();
     let y: u16 = (y - top_line + 1).try_into().unwrap();
@@ -65,16 +64,15 @@ impl Drawer {
         fn draw_layout(out: &mut impl Write, state: &State, layout: &Layout, frame: &Frame) {
             use self::Layout::*;
             match layout {
-                Buffer(name) => {
-                    let ref buf = state
-                        .buffers
-                        .get(name)
-                        .expect(format!("internal error: unknown buffer name {}", name).as_str());
+                Panel(panel, panel_name) => {
+                    let ref buf = state.buffers.get(&panel.buffer_id).expect(
+                        format!("internal error: unknown buffer name {}", panel_name).as_str(),
+                    );
 
-                    draw_buffer(out, buf, frame);
+                    draw_buffer(out, buf, &panel.cursor, frame);
 
                     // save cursor pos
-                    if name == &state.current_buffer_name {
+                    if panel_name == &state.current_panel_name {
                         write!(out, "{}", Save).unwrap();
                     }
                 }
