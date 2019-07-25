@@ -38,17 +38,20 @@ impl State {
             cursor: Cursor::default(),
             path: Some(filename.to_string()),
             buffer_id: body_buffer_id,
+            is_visible_line_number: false,
         };
 
         let config_mode_panel = Panel {
             cursor: Cursor::default(),
             path: None,
             buffer_id: mode_buffer_id,
+            is_visible_line_number: false,
         };
         let config_msg_panel = Panel {
             cursor: Cursor::default(),
             path: None,
             buffer_id: msg_buffer_id,
+            is_visible_line_number: false,
         };
 
         let layout = Layout::Lined(

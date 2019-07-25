@@ -52,6 +52,15 @@ impl Buffer {
         }
     }
 
+    pub fn line_number(n_lines: i32) -> Self {
+        let width = n_lines.to_string().len();
+        let data = (0..n_lines)
+            .into_iter()
+            .map(|n| format!("{:width$}", n, width = width))
+            .collect();
+        Buffer { data: data }
+    }
+
     pub fn config_buffer() -> ((Buffer, BufferId), (Buffer, BufferId)) {
         (
             (Buffer::empty(), BufferId::new()),

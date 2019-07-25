@@ -24,6 +24,7 @@ pub struct Panel {
     pub cursor: Cursor,
     pub path: Option<String>,
     pub buffer_id: BufferId,
+    pub is_visible_line_number: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

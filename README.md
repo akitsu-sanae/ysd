@@ -19,6 +19,7 @@ Ysd is a text editor made with Rust lang.
     - k ... move down
     - `:edit` ... change to Edit Mode
     - `:save-as <filename>` ... save current buffer as `<filename>`
+    - `:toggle-line-number` ... enable/disable showing line numbers
     - `:quit` ... quit ysd
 * in Edit Mode
     - Esc ... change to Command Mode

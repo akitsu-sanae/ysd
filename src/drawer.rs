@@ -12,7 +12,7 @@ use cursor::Cursor;
 use frame::Frame;
 use layout::Layout;
 use state::State;
-use util::clamp;
+use util::{clamp, Direction};
 
 pub struct Drawer {
     out: MouseTerminal<AlternateScreen<RawTerminal<Stdout>>>,
@@ -46,13 +46,11 @@ fn draw_buffer(out: &mut impl Write, buffer: &Buffer, cursor: &Cursor, frame: &F
     }
 
     // cursor
-    let x = frame.x + cursor.x;
-    let y = frame.y + cursor.y;
+    let x = clamp(cursor.x, 0, buffer.data[cursor.y as usize].len() as i32 - 1) + frame.x + 1;
+    let x: u16 = x.try_into().unwrap();
 
-    let x: u16 = (clamp(x, 0, buffer.data[cursor.y as usize].len() as i32) + 1)
-        .try_into()
-        .unwrap();
-    let y: u16 = (y - top_line + 1).try_into().unwrap();
+    let y = frame.y + cursor.y - top_line + 1;
+    let y: u16 = y.try_into().unwrap();
 
     write!(out, "{}", Goto(x, y)).unwrap();
 }
@@ -69,7 +67,16 @@ impl Drawer {
                         format!("internal error: unknown buffer name {}", panel_name).as_str(),
                     );
 
-                    draw_buffer(out, buf, &panel.cursor, frame);
+                    let buffer_frame = if panel.is_visible_line_number {
+                        let (line_frame, buffer_frame) = frame.split(&Direction::Left, 3);
+                        let line_buf = Buffer::line_number(buf.data.len() as i32);
+                        draw_buffer(out, &line_buf, &panel.cursor, &line_frame);
+                        buffer_frame
+                    } else {
+                        frame.clone()
+                    };
+
+                    draw_buffer(out, buf, &panel.cursor, &buffer_frame);
 
                     // save cursor pos
                     if panel_name == &state.current_panel_name {

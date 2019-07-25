@@ -2,6 +2,8 @@ use termion::color::{Bg, Magenta, Reset};
 use termion::event::{Event, Key};
 
 use super::{edit_worker::EditWorker, EventWorker};
+use buffer::{Buffer, BufferId};
+use layout::Layout;
 use state::State;
 use util::Direction;
 
@@ -36,9 +38,11 @@ impl CommandWorker {
                     }
                 }
                 (":edit", []) => return Some(Box::new(EditWorker::default())),
-                (":save-as", [filename]) => {
-                    state.current_buffer().save_as(filename).unwrap(); // remove unwrap
+                (":toggle-line-number", []) => {
+                    state.current_panel_mut().is_visible_line_number =
+                        !state.current_panel().is_visible_line_number;
                 }
+                (":save-as", [filename]) => state.current_buffer().save_as(filename).unwrap(), // TODO: remove unwrap
                 (":quit", []) => state.is_quit = true,
                 _ => {
                     // FIXME: do not use `{:?}`
