@@ -2,7 +2,11 @@
 
 #[macro_use]
 extern crate lazy_static;
+extern crate dirs;
+extern crate serde;
+extern crate serde_derive;
 extern crate termion;
+extern crate toml;
 
 use std::io::stdin;
 

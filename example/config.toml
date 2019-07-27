@@ -1,0 +1,17 @@
+visible_line_number = true
+
+[syntax_highlight.comment]
+line_comment_mark = "//"
+multi_comment_start_mark = "/*"
+multi_comment_end_mark = "*/"
+color = "130,130,130"
+
+[syntax_highlight.keyword]
+keywords = [
+    "as", "break", "const", "continue", "crate", "dyn", "else", "enum", "extern",
+    "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod",
+    "move", "mut", "pub", "ref", "return", "self", "Self", "static", "struct",
+    "super", "trait", "true", "type", "unsafe", "use", "where", "while"
+]
+color = "0,120,215"
+

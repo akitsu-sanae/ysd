@@ -1,4 +1,36 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+use serde::de::{Deserialize, Deserializer};
+use serde_derive::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub struct Rgb(pub u8, pub u8, pub u8);
+
+impl<'de> Deserialize<'de> for Rgb {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = toml::value::Value::deserialize(deserializer)?;
+        match value {
+            toml::Value::String(str) => {
+                // TODO: more strict
+                let values: Vec<&str> = str.split_terminator(',').collect();
+                match values.as_slice() {
+                    [r, g, b] => Ok(Rgb(
+                        r.parse().unwrap(),
+                        g.parse().unwrap(),
+                        b.parse().unwrap(),
+                    )),
+                    _ => panic!("invalid RGB"),
+                }
+            }
+            _ => panic!("invalid color must be string"),
+        }
+    }
+}
+
+// TODO: impl Serialize for Rgb
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 pub enum Direction {
     Up,
     Down,
