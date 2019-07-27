@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 
 use buffer::{Buffer, BufferId};
-use config::Config;
 use cursor::Cursor;
 use frame::Frame;
 use layout::{Layout, Panel, PanelName};
+use status::Status;
 use util::Direction;
 
 #[derive(Clone, Debug)]
@@ -13,7 +13,7 @@ pub struct State {
     pub buffers: HashMap<BufferId, Buffer>,
     pub layout: Layout,
     pub current_panel_name: PanelName,
-    pub config: Config,
+    pub status: Status,
     pub is_quit: bool,
 }
 
@@ -25,11 +25,11 @@ impl State {
         let body_buffer_id = BufferId::new();
         buffers.insert(body_buffer_id, body_buffer);
 
-        let ((mode_buffer, mode_buffer_id), (msg_buffer, msg_buffer_id)) = Buffer::config_buffer();
+        let ((mode_buffer, mode_buffer_id), (msg_buffer, msg_buffer_id)) = Buffer::status_buffer();
         buffers.insert(mode_buffer_id, mode_buffer);
         buffers.insert(msg_buffer_id, msg_buffer);
 
-        let config = Config {
+        let status = Status {
             mode_buffer_id: mode_buffer_id,
             msg_buffer_id: msg_buffer_id,
         };
@@ -41,13 +41,13 @@ impl State {
             is_visible_line_number: false,
         };
 
-        let config_mode_panel = Panel {
+        let status_mode_panel = Panel {
             cursor: Cursor::default(),
             path: None,
             buffer_id: mode_buffer_id,
             is_visible_line_number: false,
         };
-        let config_msg_panel = Panel {
+        let status_msg_panel = Panel {
             cursor: Cursor::default(),
             path: None,
             buffer_id: msg_buffer_id,
@@ -61,12 +61,12 @@ impl State {
                 Direction::Left,
                 6,
                 Box::new(Layout::Panel(
-                    config_mode_panel,
-                    PanelName::new("__config_mode__"),
+                    status_mode_panel,
+                    PanelName::new("__status_mode__"),
                 )),
                 Box::new(Layout::Panel(
-                    config_msg_panel,
-                    PanelName::new("__config_msg__"),
+                    status_msg_panel,
+                    PanelName::new("__status_msg__"),
                 )),
             )),
             Box::new(Layout::Panel(body_panel, PanelName::new(filename))),
@@ -75,7 +75,7 @@ impl State {
         State {
             buffers: buffers,
             layout: layout,
-            config: config,
+            status: status,
             current_panel_name: PanelName::new(filename),
             is_quit: false,
         }
@@ -117,15 +117,15 @@ impl State {
 
     pub fn update_mode(&mut self, mode: String) {
         self.buffers
-            .get_mut(&self.config.mode_buffer_id)
-            .expect("internal error: missing config mode buffer")
+            .get_mut(&self.status.mode_buffer_id)
+            .expect("internal error: missing status mode buffer")
             .data = vec![mode];
     }
 
     pub fn update_message(&mut self, msg: &str) {
         self.buffers
-            .get_mut(&self.config.msg_buffer_id)
-            .expect("internal error: missing config message buffer")
+            .get_mut(&self.status.msg_buffer_id)
+            .expect("internal error: missing status message buffer")
             .data = vec![msg.to_string()];
     }
 

@@ -61,7 +61,7 @@ impl Buffer {
         Buffer { data: data }
     }
 
-    pub fn config_buffer() -> ((Buffer, BufferId), (Buffer, BufferId)) {
+    pub fn status_buffer() -> ((Buffer, BufferId), (Buffer, BufferId)) {
         (
             (Buffer::empty(), BufferId::new()),
             (Buffer::empty(), BufferId::new()),
