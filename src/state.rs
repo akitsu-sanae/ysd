@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::convert::TryInto;
 
 use buffer::{Buffer, BufferId};
 use config::Config;
@@ -124,35 +123,20 @@ impl State {
         self.buffers
             .get_mut(&self.status.mode_buffer_id)
             .expect("internal error: missing status mode buffer")
-            .data = vec![mode];
+            .clear()
+            .push(mode);
     }
 
     pub fn update_message(&mut self, msg: &str) {
         self.buffers
             .get_mut(&self.status.msg_buffer_id)
             .expect("internal error: missing status message buffer")
-            .data = vec![msg.to_string()];
+            .clear()
+            .push(msg.to_string());
     }
 
     pub fn clamp_cursor(&mut self) {
-        let buffer_heights: HashMap<BufferId, usize> = self
-            .buffers
-            .iter()
-            .map(|(buffer_id, buffer)| (buffer_id.clone(), buffer.data.len()))
-            .collect();
-        self.layout
-            .traverse_mut::<(), ()>(&|panel, _panel_name, frame| {
-                let buffer_id = panel.buffer_id;
-                let width = frame.width;
-                let height: i32 = buffer_heights
-                    .get(&buffer_id)
-                    .expect("internal error: missing buffer")
-                    .clone()
-                    .try_into()
-                    .unwrap();
-                panel.fix_cursor_pos(width, height);
-                Err(())
-            });
+        // TODO
     }
 
     pub fn current_buffer(&self) -> &Buffer {

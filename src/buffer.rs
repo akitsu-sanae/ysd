@@ -22,8 +22,87 @@ impl BufferId {
 }
 
 #[derive(Debug, Clone)]
+pub struct Original {
+    pub start: usize,
+    pub length: usize,
+}
+
+#[derive(Debug, Clone)]
+pub enum Piece {
+    Original(usize, usize), // (pos, length)
+    Add(String),
+}
+
+impl Piece {
+    fn length(&self) -> usize {
+        match self {
+            Piece::Original(_, length) => *length,
+            Piece::Add(ref str) => str.len() as usize,
+        }
+    }
+
+    fn split(self, pos: usize) -> (Piece, Piece) {
+        match self {
+            Piece::Original(start, length) => (
+                Piece::Original(start, pos),
+                Piece::Original(start + pos, length - pos),
+            ),
+            Piece::Add(mut left) => {
+                let right = left.split_off(pos as usize);
+                (Piece::Add(left), Piece::Add(right))
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Buffer {
-    pub data: Vec<String>,
+    data: Vec<char>,
+    piece_tables: Vec<Vec<Piece>>,
+}
+
+fn split_line_pieces(line: Vec<Piece>, split_pos: usize) -> (Vec<Piece>, Vec<Piece>) {
+    let mut current_pos = 0;
+    let mut left = vec![];
+    let mut right = vec![];
+    for piece in line {
+        let piece_length = piece.length();
+        if current_pos <= split_pos && split_pos < current_pos + piece_length {
+            let (left_, right_) = piece.split(split_pos - current_pos);
+            left.push(left_);
+            right.push(right_);
+        } else if current_pos < split_pos {
+            left.push(piece)
+        } else {
+            right.push(piece)
+        }
+        current_pos += piece_length;
+    }
+    (left, right)
+}
+
+fn make_buffer_from_string(text: String) -> Buffer {
+    let data: Vec<char> = text.chars().collect();
+    let mut piece_tables: Vec<Vec<Piece>> = vec![];
+    let mut piece = Piece::Original(0, 0);
+
+    for (pos, c) in data.iter().enumerate() {
+        if *c == '\n' {
+            piece_tables.push(vec![piece]);
+            piece = Piece::Original(pos + 1, 0);
+        } else {
+            piece = if let Piece::Original(pos, length) = piece {
+                Piece::Original(pos, length + 1)
+            } else {
+                unreachable!()
+            };
+        }
+    }
+
+    Buffer {
+        data: data,
+        piece_tables: piece_tables,
+    }
 }
 
 impl Buffer {
@@ -33,32 +112,44 @@ impl Buffer {
             .and_then(|mut f| f.read_to_string(&mut text))
             .expect("can not open file");
 
-        Buffer {
-            data: text.lines().map(str::to_string).collect(),
-        }
+        make_buffer_from_string(text)
     }
 
     pub fn save_as(&self, filename: &str) -> Result<(), String> {
         // TODO: remove unwrap
         let mut file = File::create(filename).unwrap();
-        writeln!(file, "{}", self.data.join("\n")).unwrap();
+        for piece_table in self.piece_tables.iter() {
+            for piece in piece_table.iter() {
+                match piece {
+                    Piece::Original(start, length) => {
+                        let word = &self.data[*start..(*start + *length)];
+                        let word: String = word.iter().collect();
+                        write!(file, "{}", word).unwrap()
+                    }
+                    Piece::Add(ref str) => write!(file, "{}", str).unwrap(),
+                }
+            }
+        }
         file.flush().unwrap();
         Ok(())
     }
 
     pub fn empty() -> Self {
         Buffer {
-            data: vec![String::new()],
+            data: vec![],
+            piece_tables: vec![vec![]],
         }
     }
 
-    pub fn line_number(n_lines: i32) -> Self {
+    pub fn line_number(n_lines: usize) -> Self {
         let width = n_lines.to_string().len();
-        let data = (0..n_lines)
-            .into_iter()
-            .map(|n| format!("{:width$}", n, width = width))
-            .collect();
-        Buffer { data: data }
+        Buffer {
+            data: vec![],
+            piece_tables: (0..n_lines)
+                .into_iter()
+                .map(|n| vec![Piece::Add(format!("{:width$}", n, width = width))])
+                .collect(),
+        }
     }
 
     pub fn status_buffer() -> ((Buffer, BufferId), (Buffer, BufferId)) {
@@ -68,22 +159,89 @@ impl Buffer {
         )
     }
 
+    pub fn height(&self) -> usize {
+        self.piece_tables.len()
+    }
+    pub fn line_at(&self, line_i: usize) -> String {
+        let mut result = String::new();
+        for piece in self.piece_tables.get(line_i as usize).unwrap() {
+            match piece {
+                Piece::Original(start, length) => {
+                    let word: String = self.data[*start..(*start + *length)].iter().collect();
+                    result += word.as_str();
+                }
+                Piece::Add(ref str) => result += str.as_str(),
+            }
+        }
+        result
+    }
+    pub fn line_width_at(&self, line_i: usize) -> usize {
+        let mut result: usize = 0;
+        for piece in self.piece_tables.get(line_i).unwrap() {
+            result += piece.length();
+        }
+        result
+    }
+
+    pub fn clear(&mut self) -> &mut Self {
+        self.piece_tables = vec![vec![Piece::Original(0, 0)]];
+        self
+    }
+    pub fn push(&mut self, word: String) -> &mut Self {
+        let last = self.piece_tables.last_mut().unwrap();
+        last.push(Piece::Add(word));
+        self
+    }
+
     pub fn insert_line_at_cursor(&mut self, cursor: &Cursor) {
-        let (left, right) = if cursor.x < self.data[cursor.y as usize].len() as i32 {
-            self.data[cursor.y as usize].split_at(cursor.x as usize)
-        } else {
-            (self.data[cursor.y as usize].as_str(), "")
-        };
-        let (left, right) = (left.to_string(), right.to_string());
-        self.data[cursor.y as usize] = right;
-        self.data.insert(cursor.y as usize, left);
+        if cursor.x >= self.line_width_at(cursor.y) {
+            self.piece_tables
+                .insert(cursor.y, vec![Piece::Original(0, 0)]);
+            return;
+        }
+
+        let line = ::std::mem::replace(self.piece_tables.get_mut(cursor.y).unwrap(), vec![]);
+        let (left, mut right) = split_line_pieces(line, cursor.x);
+        self.piece_tables
+            .get_mut(cursor.y)
+            .unwrap()
+            .append(&mut right);
+        self.piece_tables.insert(cursor.y, left);
     }
 
     pub fn insert_at_cursor(&mut self, c: char, cursor: &Cursor) {
-        if cursor.x < self.data[cursor.y as usize].len() as i32 {
-            self.data[cursor.y as usize].insert(cursor.x as usize, c);
-        } else {
-            self.data[cursor.y as usize].push(c);
+        eprintln!(
+            "line : {:?}, char: {}",
+            self.piece_tables.get(cursor.y).unwrap(),
+            c
+        );
+        // TODO: more effective implemention needed
+        if cursor.x >= self.line_width_at(cursor.y) {
+            self.piece_tables
+                .get_mut(cursor.y)
+                .unwrap()
+                .push(Piece::Add(format!("{}", c)));
+            return;
         }
+
+        let line = ::std::mem::replace(self.piece_tables.get_mut(cursor.y).unwrap(), vec![]);
+        let mut current_pos = 0;
+        eprintln!("start : {:?}", line);
+        for piece in line {
+            let piece_length = piece.length();
+            if current_pos <= cursor.x && cursor.x < current_pos + piece_length {
+                let (left, right) = piece.split(cursor.x - current_pos);
+                self.piece_tables.get_mut(cursor.y).unwrap().push(left);
+                self.piece_tables
+                    .get_mut(cursor.y)
+                    .unwrap()
+                    .push(Piece::Add(format!("{}", c)));
+                self.piece_tables.get_mut(cursor.y).unwrap().push(right);
+            } else {
+                self.piece_tables.get_mut(cursor.y).unwrap().push(piece);
+            }
+            current_pos += piece_length;
+        }
+        eprintln!("end : {:?}", self.piece_tables.get(cursor.y).unwrap());
     }
 }

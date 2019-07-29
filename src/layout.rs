@@ -32,14 +32,7 @@ pub enum Layout {
     Panel(Panel, PanelName),
 
     //    line pos  width    line          body
-    Lined(Direction, i32, Box<Layout>, Box<Layout>),
-}
-
-impl Panel {
-    pub fn fix_cursor_pos(&mut self, width: i32, height: i32) {
-        self.cursor.x = clamp(self.cursor.x, 0, width - 1);
-        self.cursor.y = clamp(self.cursor.y, 0, height - 1);
-    }
+    Lined(Direction, usize, Box<Layout>, Box<Layout>),
 }
 
 impl Layout {

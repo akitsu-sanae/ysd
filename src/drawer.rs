@@ -20,39 +20,29 @@ pub struct Drawer {
 
 fn draw_buffer(out: &mut impl Write, buffer: &Buffer, cursor: &Cursor, frame: &Frame) {
     // `+1` means convertion from 0-origin position to 1-origin position
-    let frame_x: u16 = (frame.x + 1).try_into().unwrap();
-    let frame_y: u16 = (frame.y + 1).try_into().unwrap();
+    let frame_x = frame.x + 1;
+    let frame_y = frame.y + 1;
 
     let top_line = if cursor.y < frame.height / 2 {
         0
-    } else if cursor.y + frame.height / 2 > buffer.data.len() as i32 {
-        buffer.data.len() as i32 - frame.height
+    } else if cursor.y + frame.height / 2 > buffer.height() {
+        buffer.height() - frame.height
     } else {
         cursor.y - frame.height / 2
     };
 
     for i in { 0..frame.height } {
-        write!(
-            out,
-            "{}{}",
-            Goto(frame_x, frame_y + i as u16),
-            if i + top_line < buffer.data.len() as i32 {
-                buffer.data[(top_line + i) as usize].as_str()
-            } else {
-                ""
-            }
-        )
-        .unwrap();
+        write!(out, "{}", Goto(frame_x as u16, frame_y as u16 + i as u16)).unwrap();
+        if i + top_line < buffer.height() {
+            write!(out, "{}", buffer.line_at(top_line + i).as_str()).unwrap();
+        }
     }
 
     // cursor
-    let x = clamp(cursor.x, 0, buffer.data[cursor.y as usize].len() as i32 - 1) + frame.x + 1;
-    let x: u16 = x.try_into().unwrap();
-
+    let x = clamp(cursor.x, 0, buffer.line_at(cursor.y).len() - 1) + frame.x + 1;
     let y = frame.y + cursor.y - top_line + 1;
-    let y: u16 = y.try_into().unwrap();
 
-    write!(out, "{}", Goto(x, y)).unwrap();
+    write!(out, "{}", Goto(x as u16, y as u16)).unwrap();
 }
 
 impl Drawer {
@@ -69,7 +59,7 @@ impl Drawer {
 
                     let buffer_frame = if panel.is_visible_line_number {
                         let (line_frame, buffer_frame) = frame.split(&Direction::Left, 3);
-                        let line_buf = Buffer::line_number(buf.data.len() as i32);
+                        let line_buf = Buffer::line_number(buf.height());
                         draw_buffer(out, &line_buf, &panel.cursor, &line_frame);
                         buffer_frame
                     } else {

@@ -2,10 +2,10 @@ use util::Direction;
 
 #[derive(Debug, Clone)]
 pub struct Frame {
-    pub x: i32,
-    pub y: i32,
-    pub width: i32,
-    pub height: i32,
+    pub x: usize,
+    pub y: usize,
+    pub width: usize,
+    pub height: usize,
 }
 
 impl Frame {
@@ -14,12 +14,12 @@ impl Frame {
         Frame {
             x: 0,
             y: 0,
-            width: width as i32,
-            height: height as i32,
+            width: width as usize,
+            height: height as usize,
         }
     }
 
-    pub fn split(&self, dir: &Direction, line_width: i32) -> (Frame, Frame) {
+    pub fn split(&self, dir: &Direction, line_width: usize) -> (Frame, Frame) {
         match dir {
             Direction::Up => (
                 Frame {
