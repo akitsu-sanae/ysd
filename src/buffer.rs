@@ -34,6 +34,19 @@ pub enum Piece {
 }
 
 impl Piece {
+    fn is_original(&self) -> bool {
+        match self {
+            Piece::Original(_, _) => true,
+            _ => false,
+        }
+    }
+    fn is_add(&self) -> bool {
+        match self {
+            Piece::Add(_) => true,
+            _ => false,
+        }
+    }
+
     fn length(&self) -> usize {
         match self {
             Piece::Original(_, length) => *length,
@@ -210,29 +223,47 @@ impl Buffer {
     }
 
     pub fn insert_at_cursor(&mut self, c: char, cursor: &Cursor) {
-        // TODO: more effective implemention needed
-        if cursor.x >= self.line_width_at(cursor.y) {
-            self.piece_tables
-                .get_mut(cursor.y)
-                .unwrap()
-                .push(Piece::Add(format!("{}", c)));
-            return;
-        }
+        let line_width = self.line_width_at(cursor.y);
+        let insert_x = if cursor.x >= line_width {
+            line_width
+        } else {
+            cursor.x
+        };
 
         let line = ::std::mem::replace(self.piece_tables.get_mut(cursor.y).unwrap(), vec![]);
         let mut current_pos = 0;
         for piece in line {
+            let ref mut line = self.piece_tables.get_mut(cursor.y).unwrap();
             let piece_length = piece.length();
-            if current_pos <= cursor.x && cursor.x < current_pos + piece_length {
-                let (left, right) = piece.split(cursor.x - current_pos);
-                self.piece_tables.get_mut(cursor.y).unwrap().push(left);
-                self.piece_tables
-                    .get_mut(cursor.y)
-                    .unwrap()
-                    .push(Piece::Add(format!("{}", c)));
-                self.piece_tables.get_mut(cursor.y).unwrap().push(right);
+            if current_pos == insert_x && piece.is_original() {
+                if let Some(Piece::Add(ref mut str)) = line.last_mut() {
+                    str.push(c);
+                } else if let None = line.last_mut() {
+                    line.push(Piece::Add(format!("{}", c)));
+                } else {
+                    unreachable!();
+                }
+                line.push(piece);
+            } else if current_pos <= insert_x && insert_x < current_pos + piece_length {
+                match piece {
+                    Piece::Original(_, _) => {
+                        let (left, right) = piece.split(insert_x - current_pos);
+                        let ref mut line = self.piece_tables.get_mut(cursor.y).unwrap();
+                        if left.length() != 0 {
+                            line.push(left);
+                        }
+                        line.push(Piece::Add(format!("{}", c)));
+                        if right.length() != 0 {
+                            line.push(right);
+                        }
+                    }
+                    Piece::Add(mut str) => {
+                        str.insert(insert_x - current_pos, c);
+                        line.push(Piece::Add(str));
+                    }
+                }
             } else {
-                self.piece_tables.get_mut(cursor.y).unwrap().push(piece);
+                line.push(piece);
             }
             current_pos += piece_length;
         }
