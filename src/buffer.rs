@@ -210,11 +210,6 @@ impl Buffer {
     }
 
     pub fn insert_at_cursor(&mut self, c: char, cursor: &Cursor) {
-        eprintln!(
-            "line : {:?}, char: {}",
-            self.piece_tables.get(cursor.y).unwrap(),
-            c
-        );
         // TODO: more effective implemention needed
         if cursor.x >= self.line_width_at(cursor.y) {
             self.piece_tables
@@ -226,7 +221,6 @@ impl Buffer {
 
         let line = ::std::mem::replace(self.piece_tables.get_mut(cursor.y).unwrap(), vec![]);
         let mut current_pos = 0;
-        eprintln!("start : {:?}", line);
         for piece in line {
             let piece_length = piece.length();
             if current_pos <= cursor.x && cursor.x < current_pos + piece_length {
@@ -242,6 +236,5 @@ impl Buffer {
             }
             current_pos += piece_length;
         }
-        eprintln!("end : {:?}", self.piece_tables.get(cursor.y).unwrap());
     }
 }

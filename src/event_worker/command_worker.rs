@@ -2,8 +2,6 @@ use termion::color::{Bg, Magenta, Reset};
 use termion::event::{Event, Key};
 
 use super::{edit_worker::EditWorker, EventWorker};
-use buffer::{Buffer, BufferId};
-use layout::Layout;
 use state::State;
 use util::Direction;
 

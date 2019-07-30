@@ -1,7 +1,7 @@
 use buffer::BufferId;
 use cursor::Cursor;
 use frame::Frame;
-use util::{clamp, Direction};
+use util::Direction;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct PanelName(pub String);
