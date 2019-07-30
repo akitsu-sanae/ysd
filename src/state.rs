@@ -136,7 +136,15 @@ impl State {
     }
 
     pub fn clamp_cursor(&mut self) {
-        // TODO
+        let current_buffer_height = self.current_buffer().height();
+        let ref current_panel_name = self.current_panel_name;
+        self.layout
+            .traverse_mut::<(), ()>(&|panel, panel_name, frame| {
+                if &panel_name == &current_panel_name {
+                    panel.fix_cursor_pos(frame.width, current_buffer_height);
+                }
+                Err(())
+            });
     }
 
     pub fn current_buffer(&self) -> &Buffer {

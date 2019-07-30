@@ -1,7 +1,7 @@
 use buffer::BufferId;
 use cursor::Cursor;
 use frame::Frame;
-use util::Direction;
+use util::{clamp, Direction};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct PanelName(pub String);
@@ -25,6 +25,13 @@ pub struct Panel {
     pub path: Option<String>,
     pub buffer_id: BufferId,
     pub is_visible_line_number: bool,
+}
+
+impl Panel {
+    pub fn fix_cursor_pos(&mut self, width: usize, height: usize) {
+        self.cursor.x = clamp(self.cursor.x, 0, width - 1);
+        self.cursor.y = clamp(self.cursor.y, 0, height - 1);
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

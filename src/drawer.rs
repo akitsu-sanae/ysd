@@ -22,7 +22,7 @@ fn draw_buffer(out: &mut impl Write, buffer: &Buffer, cursor: &Cursor, frame: &F
     let frame_x = frame.x + 1;
     let frame_y = frame.y + 1;
 
-    let top_line = if cursor.y < frame.height / 2 {
+    let top_line = if buffer.height() < frame.height || cursor.y < frame.height / 2 {
         0
     } else if cursor.y + frame.height / 2 > buffer.height() {
         buffer.height() - frame.height
@@ -38,7 +38,7 @@ fn draw_buffer(out: &mut impl Write, buffer: &Buffer, cursor: &Cursor, frame: &F
     }
 
     // cursor
-    let x = clamp(cursor.x, 0, buffer.line_at(cursor.y).len() - 1) + frame.x + 1;
+    let x = clamp(cursor.x, 0, buffer.line_at(cursor.y).len()) + frame.x + 1;
     let y = frame.y + cursor.y - top_line + 1;
 
     write!(out, "{}", Goto(x as u16, y as u16)).unwrap();
@@ -57,8 +57,9 @@ impl Drawer {
                     );
 
                     let buffer_frame = if panel.is_visible_line_number {
-                        let (line_frame, buffer_frame) = frame.split(&Direction::Left, 3);
                         let line_buf = Buffer::line_number(buf.height());
+                        let frame_width = line_buf.line_width_at(0);
+                        let (line_frame, buffer_frame) = frame.split(&Direction::Left, frame_width);
                         draw_buffer(out, &line_buf, &panel.cursor, &line_frame);
                         buffer_frame
                     } else {

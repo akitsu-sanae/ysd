@@ -172,7 +172,7 @@ impl Buffer {
             data: vec![],
             piece_tables: (0..n_lines)
                 .into_iter()
-                .map(|n| vec![Piece::Add(format!("{:width$}", n, width = width))])
+                .map(|n| vec![Piece::Add(format!(" {:width$} ", n + 1, width = width))])
                 .collect(),
         }
     }
@@ -189,7 +189,7 @@ impl Buffer {
     }
     pub fn line_at(&self, line_i: usize) -> String {
         let mut result = String::new();
-        for piece in self.piece_tables.get(line_i as usize).unwrap() {
+        for piece in self.piece_tables.get(line_i).unwrap() {
             match piece {
                 Piece::Original(start, length) => {
                     let word: String = self.data[*start..(*start + *length)].iter().collect();
@@ -254,7 +254,7 @@ impl Buffer {
                     line.push(Piece::Add(format!("{}", c)));
                 }
                 line.push(piece);
-            } else if current_pos <= insert_x && insert_x < current_pos + piece_length {
+            } else if current_pos <= insert_x && insert_x <= current_pos + piece_length {
                 match piece {
                     Piece::Original(_, _) => {
                         let (left, right) = piece.split(insert_x - current_pos);
@@ -295,7 +295,7 @@ impl Buffer {
             if current_pos <= erase_x && erase_x < current_pos + piece_length {
                 match piece {
                     Piece::Original(_, _) => {
-                        let (mut left, right) = piece.split(erase_x - current_pos + 1);
+                        let (left, right) = piece.split(erase_x - current_pos + 1);
                         let ref mut line = self.piece_tables.get_mut(cursor.y).unwrap();
                         if let Some(left) = left.pop() {
                             line.push(left);
