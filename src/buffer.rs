@@ -66,6 +66,18 @@ impl Piece {
             }
         }
     }
+
+    fn pop(self) -> Option<Piece> {
+        match self {
+            Piece::Original(_, 1) => None,
+            Piece::Original(start, length) => Some(Piece::Original(start, length - 1)),
+            Piece::Add(ref str) if str.len() == 1 => None,
+            Piece::Add(mut str) => {
+                str.pop();
+                Some(Piece::Add(str))
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -238,10 +250,8 @@ impl Buffer {
             if current_pos == insert_x && piece.is_original() {
                 if let Some(Piece::Add(ref mut str)) = line.last_mut() {
                     str.push(c);
-                } else if let None = line.last_mut() {
-                    line.push(Piece::Add(format!("{}", c)));
                 } else {
-                    unreachable!();
+                    line.push(Piece::Add(format!("{}", c)));
                 }
                 line.push(piece);
             } else if current_pos <= insert_x && insert_x < current_pos + piece_length {
@@ -259,6 +269,43 @@ impl Buffer {
                     }
                     Piece::Add(mut str) => {
                         str.insert(insert_x - current_pos, c);
+                        line.push(Piece::Add(str));
+                    }
+                }
+            } else {
+                line.push(piece);
+            }
+            current_pos += piece_length;
+        }
+    }
+
+    pub fn erase_at_cursor(&mut self, cursor: &Cursor) {
+        let line_width = self.line_width_at(cursor.y);
+        let erase_x = if cursor.x >= line_width {
+            line_width
+        } else {
+            cursor.x
+        };
+
+        let line = ::std::mem::replace(self.piece_tables.get_mut(cursor.y).unwrap(), vec![]);
+        let mut current_pos = 0;
+        for piece in line {
+            let ref mut line = self.piece_tables.get_mut(cursor.y).unwrap();
+            let piece_length = piece.length();
+            if current_pos <= erase_x && erase_x < current_pos + piece_length {
+                match piece {
+                    Piece::Original(_, _) => {
+                        let (mut left, right) = piece.split(erase_x - current_pos + 1);
+                        let ref mut line = self.piece_tables.get_mut(cursor.y).unwrap();
+                        if let Some(left) = left.pop() {
+                            line.push(left);
+                        }
+                        if right.length() != 0 {
+                            line.push(right);
+                        }
+                    }
+                    Piece::Add(mut str) => {
+                        str.remove(erase_x - current_pos);
                         line.push(Piece::Add(str));
                     }
                 }

@@ -33,6 +33,11 @@ impl EventWorker for EditWorker {
                 cursor.x = 0;
                 cursor.go(Direction::Down, 1);
             }
+            Event::Key(Key::Backspace) => {
+                let cursor = state.current_panel().cursor.clone();
+                state.current_buffer_mut().erase_at_cursor(&cursor);
+                state.current_panel_mut().cursor.go(Direction::Left, 1);
+            }
             Event::Key(Key::Char(c)) => {
                 let cursor = state.current_panel().cursor.clone();
                 let buffer_id = state.current_panel().buffer_id;
