@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use buffer::{Buffer, BufferId};
-use config::Config;
 use cursor::Cursor;
 use frame::Frame;
 use layout::{Layout, Panel, PanelName};
@@ -14,7 +13,6 @@ pub struct State {
     pub layout: Layout,
     pub current_panel_name: PanelName,
     pub status: Status,
-    pub config: Config,
     pub is_quit: bool,
 }
 
@@ -40,21 +38,22 @@ impl State {
             path: Some(filename.to_string()),
             buffer_id: body_buffer_id,
             is_visible_line_number: false,
+            enable_syntax_highlight: true,
         };
-
-        let config = Config::load();
 
         let status_mode_panel = Panel {
             cursor: Cursor::default(),
             path: None,
             buffer_id: mode_buffer_id,
             is_visible_line_number: false,
+            enable_syntax_highlight: false,
         };
         let status_msg_panel = Panel {
             cursor: Cursor::default(),
             path: None,
             buffer_id: msg_buffer_id,
             is_visible_line_number: false,
+            enable_syntax_highlight: false,
         };
 
         let layout = Layout::Lined(
@@ -79,7 +78,6 @@ impl State {
             buffers: buffers,
             layout: layout,
             status: status,
-            config: config,
             current_panel_name: PanelName::new(filename),
             is_quit: false,
         }

@@ -14,6 +14,16 @@ pub struct Config {
     pub syntax_highlight: SyntaxHighlight,
 }
 
+use std::sync::Mutex;
+
+lazy_static! {
+    static ref CONFIG: Mutex<Config> = Mutex::new(Config::load());
+}
+
+pub fn syntax_highlight(f: &mut impl FnMut(&SyntaxHighlight) -> ()) {
+    f(&CONFIG.lock().unwrap().syntax_highlight)
+}
+
 impl Config {
     pub fn load() -> Self {
         let mut pathbuf = dirs::home_dir().expect("internal error: can not find home directory.");

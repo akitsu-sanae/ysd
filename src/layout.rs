@@ -25,6 +25,7 @@ pub struct Panel {
     pub path: Option<String>,
     pub buffer_id: BufferId,
     pub is_visible_line_number: bool,
+    pub enable_syntax_highlight: bool,
 }
 
 impl Panel {
