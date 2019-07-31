@@ -67,10 +67,14 @@ fn draw_syntax_highlighted_buffer(
     syntax_highlight(
         &mut |syntax_highlight: &syntax_highlight::SyntaxHighlight| {
             let ref keyword = syntax_highlight.keyword;
+            let ref comment = syntax_highlight.comment;
+            let mut is_comment = false;
             for i in { 0..frame.height } {
+                if i + top_line >= buffer.height() {
+                    break;
+                }
                 write!(out, "{}", Goto(frame_x as u16, frame_y as u16 + i as u16)).unwrap();
-                if i + top_line < buffer.height() {
-                    let line = buffer.line_at(top_line + i);
+                let mut print_non_comment_part = |line: String| {
                     let mut word = String::new();
                     for c in line.chars() {
                         if c.is_alphabetic() || c == '_' {
@@ -93,6 +97,28 @@ fn draw_syntax_highlighted_buffer(
                             write!(out, "{}", c).unwrap();
                         }
                     }
+                };
+
+                let line = buffer.line_at(top_line + i);
+                if let Some(ref line_comment_mark) = comment.line_comment_mark {
+                    if let Some(comment_pos) = line.find(line_comment_mark) {
+                        let mut left = line;
+                        let right = left.split_off(comment_pos);
+                        print_non_comment_part(left);
+                        let Rgb(r, g, b) = comment.color;
+                        write!(
+                            out,
+                            "{}{}{}",
+                            color::Fg(color::Rgb(r, g, b)),
+                            right,
+                            color::Fg(color::Reset)
+                        )
+                        .unwrap();
+                    } else {
+                        print_non_comment_part(line);
+                    }
+                } else {
+                    print_non_comment_part(line);
                 }
             }
         },
