@@ -1,7 +1,9 @@
 use std::fs::File;
 use std::io::Read;
 use std::io::Write;
-
+/*
+ * test
+ * */
 use cursor::Cursor;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
@@ -187,15 +189,21 @@ impl Buffer {
     pub fn height(&self) -> usize {
         self.piece_tables.len()
     }
-    pub fn line_at(&self, line_i: usize) -> String {
-        let mut result = String::new();
+    pub fn line_at(&self, line_i: usize) -> Vec<char> {
+        let mut result = vec![];
         for piece in self.piece_tables.get(line_i).unwrap() {
             match piece {
                 Piece::Original(start, length) => {
-                    let word: String = self.data[*start..(*start + *length)].iter().collect();
-                    result += word.as_str();
+                    let mut target: Vec<char> = self.data[*start..(*start + *length)]
+                        .iter()
+                        .cloned()
+                        .collect();
+                    result.append(&mut target)
                 }
-                Piece::Add(ref str) => result += str.as_str(),
+                Piece::Add(ref str) => {
+                    let mut target: Vec<char> = str.chars().clone().collect();
+                    result.append(&mut target)
+                }
             }
         }
         result

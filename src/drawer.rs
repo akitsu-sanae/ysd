@@ -35,7 +35,8 @@ fn draw_plain_buffer(out: &mut impl Write, buffer: &Buffer, cursor: &Cursor, fra
     for i in { 0..frame.height } {
         write!(out, "{}", Goto(frame_x as u16, frame_y as u16 + i as u16)).unwrap();
         if i + top_line < buffer.height() {
-            write!(out, "{}", buffer.line_at(top_line + i).as_str()).unwrap();
+            let line: String = buffer.line_at(top_line + i).into_iter().collect();
+            write!(out, "{}", line.as_str()).unwrap();
         }
     }
 
@@ -44,6 +45,31 @@ fn draw_plain_buffer(out: &mut impl Write, buffer: &Buffer, cursor: &Cursor, fra
     let y = frame.y + cursor.y - top_line + 1;
 
     write!(out, "{}", Goto(x as u16, y as u16)).unwrap();
+}
+
+fn print_non_comment_part(out: &mut impl Write, line: String, keyword: &syntax_highlight::Keyword) {
+    let mut word = String::new();
+    for c in line.chars() {
+        if c.is_alphabetic() || c == '_' {
+            word.push(c);
+        } else {
+            if keyword.keywords.contains(&word) {
+                let Rgb(r, g, b) = keyword.color;
+                write!(
+                    out,
+                    "{}{}{}",
+                    color::Fg(color::Rgb(r, g, b)),
+                    word,
+                    color::Fg(color::Reset)
+                )
+                .unwrap();
+            } else {
+                write!(out, "{}", word).unwrap();
+            }
+            word = String::new();
+            write!(out, "{}", c).unwrap();
+        }
+    }
 }
 
 fn draw_syntax_highlighted_buffer(
@@ -68,43 +94,54 @@ fn draw_syntax_highlighted_buffer(
         &mut |syntax_highlight: &syntax_highlight::SyntaxHighlight| {
             let ref keyword = syntax_highlight.keyword;
             let ref comment = syntax_highlight.comment;
+
             let mut is_comment = false;
             for i in { 0..frame.height } {
                 if i + top_line >= buffer.height() {
                     break;
                 }
                 write!(out, "{}", Goto(frame_x as u16, frame_y as u16 + i as u16)).unwrap();
-                let mut print_non_comment_part = |line: String| {
-                    let mut word = String::new();
-                    for c in line.chars() {
-                        if c.is_alphabetic() || c == '_' {
-                            word.push(c);
+
+                // TODO: be more elegant
+                let line: String = buffer.line_at(top_line + i).iter().collect();
+
+                if let Some((_, ref end_comment_mark)) = comment.multi_comment_mark {
+                    if is_comment {
+                        if let Some(mut comment_pos) = line.find(end_comment_mark) {
+                            comment_pos += end_comment_mark.len();
+                            let mut left = line;
+                            let right = left.split_off(comment_pos);
+                            let Rgb(r, g, b) = comment.color;
+                            write!(
+                                out,
+                                "{}{}{}",
+                                color::Fg(color::Rgb(r, g, b)),
+                                left,
+                                color::Fg(color::Reset)
+                            )
+                            .unwrap();
+                            is_comment = false;
+                            print_non_comment_part(out, right, keyword);
                         } else {
-                            if keyword.keywords.contains(&word) {
-                                let Rgb(r, g, b) = keyword.color;
-                                write!(
-                                    out,
-                                    "{}{}{}",
-                                    color::Fg(color::Rgb(r, g, b)),
-                                    word,
-                                    color::Fg(color::Reset)
-                                )
-                                .unwrap();
-                            } else {
-                                write!(out, "{}", word).unwrap();
-                            }
-                            word = String::new();
-                            write!(out, "{}", c).unwrap();
+                            let Rgb(r, g, b) = comment.color;
+                            write!(
+                                out,
+                                "{}{}{}",
+                                color::Fg(color::Rgb(r, g, b)),
+                                line,
+                                color::Fg(color::Reset)
+                            )
+                            .unwrap();
                         }
+                        continue;
                     }
                 };
 
-                let line = buffer.line_at(top_line + i);
                 if let Some(ref line_comment_mark) = comment.line_comment_mark {
                     if let Some(comment_pos) = line.find(line_comment_mark) {
                         let mut left = line;
                         let right = left.split_off(comment_pos);
-                        print_non_comment_part(left);
+                        print_non_comment_part(out, left, keyword);
                         let Rgb(r, g, b) = comment.color;
                         write!(
                             out,
@@ -114,12 +151,29 @@ fn draw_syntax_highlighted_buffer(
                             color::Fg(color::Reset)
                         )
                         .unwrap();
-                    } else {
-                        print_non_comment_part(line);
+                        continue;
                     }
-                } else {
-                    print_non_comment_part(line);
+                };
+
+                if let Some((ref begin_comment_mark, _)) = comment.multi_comment_mark {
+                    if let Some(comment_pos) = line.find(begin_comment_mark) {
+                        let mut left = line;
+                        let right = left.split_off(comment_pos);
+                        print_non_comment_part(out, left, keyword);
+                        let Rgb(r, g, b) = comment.color;
+                        write!(
+                            out,
+                            "{}{}{}",
+                            color::Fg(color::Rgb(r, g, b)),
+                            right,
+                            color::Fg(color::Reset)
+                        )
+                        .unwrap();
+                        is_comment = true;
+                        continue;
+                    }
                 }
+                print_non_comment_part(out, line, keyword);
             }
         },
     );
