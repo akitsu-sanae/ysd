@@ -47,6 +47,17 @@ fn draw_plain_buffer(out: &mut impl Write, buffer: &Buffer, cursor: &Cursor, fra
     write!(out, "{}", Goto(x as u16, y as u16)).unwrap();
 }
 
+fn print_comment_part(out: &mut impl Write, word: String, color: Rgb) {
+    write!(
+        out,
+        "{}{}{}",
+        color::Fg(color::Rgb(color.0, color.1, color.2)),
+        word,
+        color::Fg(color::Reset)
+    )
+    .unwrap();
+}
+
 fn print_non_comment_part(out: &mut impl Write, line: String, keyword: &syntax_highlight::Keyword) {
     let mut word = String::new();
     for c in line.chars() {
@@ -102,78 +113,85 @@ fn draw_syntax_highlighted_buffer(
                 }
                 write!(out, "{}", Goto(frame_x as u16, frame_y as u16 + i as u16)).unwrap();
 
-                // TODO: be more elegant
-                let line: String = buffer.line_at(top_line + i).iter().collect();
+                let mut line: String = buffer.line_at(top_line + i).iter().collect();
 
-                if let Some((_, ref end_comment_mark)) = comment.multi_comment_mark {
+                loop {
                     if is_comment {
-                        if let Some(mut comment_pos) = line.find(end_comment_mark) {
-                            comment_pos += end_comment_mark.len();
-                            let mut left = line;
-                            let right = left.split_off(comment_pos);
-                            let Rgb(r, g, b) = comment.color;
-                            write!(
-                                out,
-                                "{}{}{}",
-                                color::Fg(color::Rgb(r, g, b)),
-                                left,
-                                color::Fg(color::Reset)
-                            )
-                            .unwrap();
-                            is_comment = false;
-                            print_non_comment_part(out, right, keyword);
-                        } else {
-                            let Rgb(r, g, b) = comment.color;
-                            write!(
-                                out,
-                                "{}{}{}",
-                                color::Fg(color::Rgb(r, g, b)),
-                                line,
-                                color::Fg(color::Reset)
-                            )
-                            .unwrap();
+                        if let Some((_, ref end_comment_mark)) = comment.multi_comment_mark {
+                            if let Some(mut comment_pos) = line.find(end_comment_mark) {
+                                comment_pos += end_comment_mark.len();
+                                let mut left = line;
+                                let right = left.split_off(comment_pos);
+                                print_comment_part(out, left, comment.color);
+                                is_comment = false;
+                                line = right;
+                            }
                         }
-                        continue;
-                    }
-                };
+                    };
 
-                if let Some(ref line_comment_mark) = comment.line_comment_mark {
-                    if let Some(comment_pos) = line.find(line_comment_mark) {
-                        let mut left = line;
-                        let right = left.split_off(comment_pos);
-                        print_non_comment_part(out, left, keyword);
-                        let Rgb(r, g, b) = comment.color;
-                        write!(
-                            out,
-                            "{}{}{}",
-                            color::Fg(color::Rgb(r, g, b)),
-                            right,
-                            color::Fg(color::Reset)
-                        )
-                        .unwrap();
-                        continue;
-                    }
-                };
+                    let line_comment_pos =
+                        if let Some(ref line_comment_mark) = comment.line_comment_mark {
+                            line.find(line_comment_mark)
+                        } else {
+                            None
+                        };
 
-                if let Some((ref begin_comment_mark, _)) = comment.multi_comment_mark {
-                    if let Some(comment_pos) = line.find(begin_comment_mark) {
-                        let mut left = line;
-                        let right = left.split_off(comment_pos);
-                        print_non_comment_part(out, left, keyword);
-                        let Rgb(r, g, b) = comment.color;
-                        write!(
-                            out,
-                            "{}{}{}",
-                            color::Fg(color::Rgb(r, g, b)),
-                            right,
-                            color::Fg(color::Reset)
-                        )
-                        .unwrap();
-                        is_comment = true;
-                        continue;
+                    let multi_comment_pos =
+                        if let Some((ref begin_comment_mark, _)) = comment.multi_comment_mark {
+                            line.find(begin_comment_mark)
+                        } else {
+                            None
+                        };
+
+                    match (line_comment_pos, multi_comment_pos) {
+                        (Some(line_pos), Some(multi_pos)) => {
+                            if line_pos < multi_pos {
+                                let mut left = line;
+                                let right = left.split_off(line_pos);
+                                print_non_comment_part(out, left, keyword);
+                                print_comment_part(out, right, comment.color);
+                                line = String::new();
+                                break;
+                            } else {
+                                let mut left = line;
+                                let mut mid = left.split_off(line_pos);
+                                let right = mid.split_off(
+                                    comment.multi_comment_mark.as_ref().unwrap().0.len(),
+                                );
+                                print_non_comment_part(out, left, keyword);
+                                print_comment_part(out, mid, comment.color);
+                                line = right;
+                                is_comment = true;
+                                continue;
+                            }
+                        }
+                        (Some(line_pos), None) => {
+                            let mut left = line;
+                            let right = left.split_off(line_pos);
+                            print_non_comment_part(out, left, keyword);
+                            print_comment_part(out, right, comment.color);
+                            line = String::new();
+                            break;
+                        }
+                        (None, Some(multi_pos)) => {
+                            let mut left = line;
+                            let mut mid = left.split_off(multi_pos);
+                            let right =
+                                mid.split_off(comment.multi_comment_mark.as_ref().unwrap().0.len());
+                            print_non_comment_part(out, left, keyword);
+                            print_comment_part(out, mid, comment.color);
+                            line = right;
+                            is_comment = true;
+                            continue;
+                        }
+                        (None, None) => break,
                     }
                 }
-                print_non_comment_part(out, line, keyword);
+                if is_comment {
+                    print_comment_part(out, line, comment.color);
+                } else {
+                    print_non_comment_part(out, line, keyword);
+                }
             }
         },
     );
